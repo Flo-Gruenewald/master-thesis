@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 19.10.2026 — Prototype/Demo is now the git repo itself
+- `Prototype/Demo` = local clone of https://github.com/Flo-Gruenewald/master-thesis (branch `main`, remote `origin`); commit `8557b67` moved `demo/*` to the repo root. README + `.gitignore` now live in this folder (`.gitignore` also keeps out `*.otf`/`*.ttf`: a PP Pangaia font had appeared in `host/web/fonts/`). Git identity set in the repo (Flo-Gruenewald, noreply mail).
+- Workflow: after a tested change → `git status`, commit, `git push`; `git pull` before working (experiments from Claude Code on the web come as PRs). Noted in `00_Bots/Prototype/Prototype_Bot_Onboarding.md` (Rules). The export script → `00_Bots/Prototype/Tools/_Archive/`.
+- **Undo:** delete the hidden `.git` folder in `Prototype/Demo` (the files stay); on GitHub revert `8557b67` to get `demo/` back.
+
 ## 19.10.2026 — Demo code on GitHub
 - Pushed to https://github.com/Flo-Gruenewald/master-thesis (public), commit `0ec3a52` "Add the demo code": `demo/` = a filtered copy of `Prototype/Demo` (88 files, 3 MB) + root README (project, folder table, what is left out) + `.gitignore`.
 - Left out on purpose: `esphome/secrets.yaml` and `.esphome/` (home Wi-Fi password in clear text), all audio (Beatles song, Pixabay licence, VR music, Lena's voice), PP Neue Montreal fonts (commercial), `host/traces/` (recorded table loops), WLED backups (home SSID), logs, caches, backup folders.
