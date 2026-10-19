@@ -1,10 +1,10 @@
 # Breaking the Monotony Spiral on a Mars Mission: co-sense
 
 MSc thesis, Product & Service Design, Sapienza University of Rome (Florian Grünewald, 2026).
-This repository holds the code of the physical demonstrator (`demo/`): one room "node" that turns light,
+This repository is the physical demonstrator: one room "node" that turns light,
 sound and presence into three scenarios for a long-duration Mars mission crew.
 
-## demo/
+## Folders
 
 | Folder | What it is |
 |---|---|
@@ -16,5 +16,5 @@ sound and presence into three scenarios for a long-duration Mars mission crew.
 | `pi/` | Earlier Raspberry Pi setup (the host now runs on a laptop). |
 | `Setup_Log/`, `Plan/` | Change log and planning notes. |
 
-Not included: sounds and music (licences: see `demo/Sounds/SOURCES.md`), the PP Neue Montreal web fonts (commercial
+Not included: sounds and music (licences: see `Sounds/SOURCES.md`), the PP Neue Montreal web fonts (commercial
 licence), recorded table loops, Wi-Fi credentials. Without the sounds the host runs but stays silent.

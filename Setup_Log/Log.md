@@ -2,6 +2,13 @@
 
 Every change with undo steps. Newest first.
 
+## 19.10.2026 — Demo code on GitHub
+- Pushed to https://github.com/Flo-Gruenewald/master-thesis (public), commit `0ec3a52` "Add the demo code": `demo/` = a filtered copy of `Prototype/Demo` (88 files, 3 MB) + root README (project, folder table, what is left out) + `.gitignore`.
+- Left out on purpose: `esphome/secrets.yaml` and `.esphome/` (home Wi-Fi password in clear text), all audio (Beatles song, Pixabay licence, VR music, Lena's voice), PP Neue Montreal fonts (commercial), `host/traces/` (recorded table loops), WLED backups (home SSID), logs, caches, backup folders.
+- Update later: `python 00_Bots/Prototype/Tools/export_demo_to_github.py Prototype/Demo <clone>/demo`, check `git status`, commit, push (GitHub sign-in via Git Credential Manager on the laptop).
+- **Undo:** on GitHub revert commit `0ec3a52` (or delete `demo/`).
+- Same day: `MorningJam_Progress.md` removed from the repo (commit `ae5c1d1`, Flo's OK); undo = revert that commit.
+
 ## 18.10.2026 — Scenario tab header: big day, plain title, small framing
 - Order now: mission day big (30 px, Mars orange / the tab's colour) → story as the title (24 px, not italic) → framing small (11 px caps, grey). Days from the booklet: S1 "Day 140 · Wednesday morning", S2 "Day 445 · on the way home" (where S2 starts), S3 "Day 455 · Friday, late evening". Cache `v=64`. Checked on S3.
 - **Undo:** as the entry below (`before_story_pulse/`).
