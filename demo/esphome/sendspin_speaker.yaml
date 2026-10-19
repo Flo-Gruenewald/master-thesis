@@ -1,0 +1,60 @@
+# Room speaker subnode: Sendspin (synchronised multi-room audio) on an ESP32-S3 + MAX98357A.
+# Validated with ESPHome 2026.6.5 (esphome config). Joins Music Assistant automatically; group several of these in Music Assistant and they play
+# the host's room stream (/room.wav) in sync. Based on ESPHome's Sendspin media source example.
+#
+# Hardware: ESP32-S3 with PSRAM (e.g. N16R8 DevKitC-1) — a plain ESP32 DevKit V1 is NOT enough;
+# MAX98357A I2S amp (VIN 5V, GND, LRC → GPIO4, BCLK → GPIO5, DIN → GPIO6), 3–5 W speaker on the amp.
+# PSRAM mode: N16R8 boards = octal (as below); boards with quad PSRAM: mode: quad.
+
+substitutions:
+  name: room-speaker-1
+
+esphome:
+  name: ${name}
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+psram:
+  mode: octal
+
+logger:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap: {}
+captive_portal:
+
+ota:
+  - platform: esphome
+
+api:                            # Home Assistant / Music Assistant find it here
+
+i2s_audio:
+  i2s_lrclk_pin: GPIO4
+  i2s_bclk_pin: GPIO5
+
+speaker:
+  - platform: i2s_audio
+    id: amp
+    dac_type: external
+    i2s_dout_pin: GPIO6
+    channel: mono
+
+sendspin:
+
+media_source:
+  - platform: sendspin
+    id: sendspin_source
+
+media_player:
+  - platform: speaker_source
+    id: room_speaker
+    name: Room speaker
+    media_pipeline:
+      speaker: amp
+      sources:
+        - sendspin_source

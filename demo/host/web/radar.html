@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · live</title>
+<style>
+  :root { --bg:#171310; --surface:#211C17; --border:#3A2C24; --t1:#F2EAE3; --t2:#B8A99C; --t3:#8A7A6C;
+          --sand:#E37156; --peach:#F2AD9D; --teal:#76DBD8; --red:#D0273F; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--t1); font:14px/1.4 "PP Neue Montreal", "Helvetica Neue", Arial, sans-serif; }
+  header { display:flex; align-items:baseline; gap:16px; padding:18px 24px 6px; flex-wrap:wrap; }
+  h1 { font:500 28px "PP Pangaia", Georgia, serif; margin:0; }
+  .muted { color:var(--t3); }
+  main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:16px; padding:12px 24px 24px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .tile { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  canvas { width:100%; height:auto; display:block; }
+  .lab { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--t3); }
+  .big { font:500 34px "PP Pangaia", Georgia, serif; }
+  .row { display:flex; justify-content:space-between; gap:8px; padding:3px 0; }
+  .bar { height:14px; border-radius:7px; background:#2A231D; overflow:hidden; margin-top:6px; }
+  .bar > div { height:100%; width:0; background:var(--sand); transition:width .15s; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+  #log { font:12px ui-monospace, Consolas, monospace; color:var(--t2); white-space:pre; height:150px; overflow:hidden; }
+  .side { display:flex; flex-direction:column; gap:12px; }
+  input[type=number] { width:70px; background:#2A231D; color:var(--t1); border:1px solid var(--border); border-radius:6px; padding:3px 6px; }
+  #swatch { width:100%; height:38px; border-radius:8px; margin-top:6px; border:1px solid var(--border); }
+  body.embed header { display:none; }
+  body.embed main { padding:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Radar · live</h1>
+  <span class="muted">two LD2450 in one map (spotlight radar's coordinates) · <b style="color:#E37156">●</b> spotlight radar · <b style="color:#76DBD8">●</b> wall radar · white ring = a person the host counts (both fused, ghosts filtered)</span>
+  <span id="conn" class="muted">connecting…</span>
+</header>
+<main>
+  <div class="side">
+    <div class="tile"><div class="lab">Both radars, merged <span id="wallc" class="muted"></span></div><canvas id="cv" width="900" height="760"></canvas></div>
+  </div>
+  <div class="side">
+    <div class="tile">
+      <div class="lab">People</div>
+      <div class="big" id="count">–</div>
+      <div class="row"><span class="muted">Host counts (after ghost filter)</span><span id="hostc">–</span></div>
+      <div class="row"><span class="muted">Host says</span><span id="present">–</span></div>
+      <div class="row"><span class="muted">Messages / s</span><span id="rate">0</span></div>
+      <div id="targets"></div>
+      <div class="row" style="margin-top:8px"><span class="muted">Wall radar people</span><span id="countw">–</span></div>
+      <div id="targetsw"></div>
+    </div>
+    <div class="tile">
+      <div class="lab">Proximity → spotlight (preview; the host uses room.toml [light.proximity])</div>
+      <div class="row"><span class="muted">Nearest person</span><span id="near">–</span></div>
+      <div class="bar"><div id="lvl"></div></div>
+      <div class="row"><span class="muted">Level</span><span id="lvltxt">–</span></div>
+      <div class="row"><span class="muted">Full at (m)</span><input id="nearM" type="number" step="0.1" value="0.6"></div>
+      <div class="row"><span class="muted">Soft from (m)</span><input id="farM" type="number" step="0.1" value="4.0"></div>
+      <div class="row"><span class="muted">Soft level (%)</span><input id="softP" type="number" step="1" value="10"></div>
+      <div class="lab" style="margin-top:10px">What the spotlight shows now</div>
+      <div id="swatch"></div>
+    </div>
+    <div class="tile"><div class="lab">Raw radar messages</div><div id="log"></div></div>
+  </div>
+</main>
+<script>
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+const COL = {presence: "#E37156", presence_wall: "#76DBD8"};     // spotlight = Mars orange, wall = Kolibri blue
+const RANGE = 6000, FOV = 60 * Math.PI / 180;           // LD2450: ~6 m, ±60°
+const cv = document.getElementById("cv");
+let wallCal = [0, 0, 0];                                // wall radar → spotlight coordinates (host: [presence] wall_offset_mm, wall_rot_deg)
+const SRC = {                                           // one entry per radar: raw targets, trails, count
+  presence:      {T: {1:{}, 2:{}, 3:{}}, trails: {1:[], 2:[], 3:[]}, count: null},
+  presence_wall: {T: {1:{}, 2:{}, 3:{}}, trails: {1:[], 2:[], 3:[]}, count: null},
+};
+let count = null, present = null, msgs = 0, logLines = [], topSpot = null, hostPeople = [];
+
+const $ = id => document.getElementById(id);
+const fmt = mm => (mm / 1000).toFixed(2) + " m";
+
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  ws.onopen = () => $("conn").textContent = "● live";
+  ws.onclose = () => { $("conn").textContent = "reconnecting…"; setTimeout(connect, 1500); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data), t = m.topic, p = m.payload;
+    const ms = t.match(/^in\/(presence|presence_wall)\/(.+)$/);
+    if (ms) {
+      const src = SRC[ms[1]], rest = ms[2];
+      msgs++;
+      logLines.push(new Date().toLocaleTimeString() + "  " + (ms[1] === "presence" ? "top " : "wall ") + rest + "  " + JSON.stringify(p));
+      logLines = logLines.slice(-9);
+      const mt = rest.match(/^target\/(\d)\/([xy])$/);
+      if (mt) { const n = +mt[1]; src.T[n][mt[2]] = +p; src.T[n].t = performance.now(); }
+      else if (rest === "count") { src.count = +p; if (ms[1] === "presence") count = +p; }
+    } else if (t === "state" && p && p.presence) {
+      present = p.presence.present; hostPeople = p.presence.people || [];
+      if (p.presence.wall_cal) wallCal = p.presence.wall_cal;
+      if (p.spots && !topSpot) topSpot = p.spots.find(s => s.top_spotlight) || null;
+    } else if (t === "light" && p && p.px) {
+      showSwatch(p.px);
+    }
+  };
+}
+
+function showSwatch(hex) {
+  // the TOP spotlight is the last spot in the virtual strip: average its last 77 LEDs (or what is there)
+  const n = hex.length / 6, k = Math.min(77, n), rgb = [0, 0, 0];
+  for (let i = n - k; i < n; i++) for (let c = 0; c < 3; c++) rgb[c] += parseInt(hex.substr(i * 6 + c * 2, 2), 16);
+  $("swatch").style.background = `rgb(${rgb.map(v => Math.round(v / k)).join(",")})`;
+}
+
+function people(src) {
+  const now = performance.now(), out = [];
+  for (const n of [1, 2, 3]) {
+    const p = src.T[n];
+    if (!(p.t && now - p.t < 1500 && (p.x || p.y))) continue;
+    let x = p.x || 0, y = p.y || 0;
+    if (src === SRC.presence_wall) { const a = wallCal[2] * Math.PI / 180;
+      [x, y] = [x * Math.cos(a) - y * Math.sin(a) + wallCal[0], x * Math.sin(a) + y * Math.cos(a) + wallCal[1]]; }
+    out.push({n, x, y, d: Math.hypot(p.x || 0, p.y || 0)});
+  }
+  return out;
+}
+
+function level(dmm) {
+  const near = +$("nearM").value * 1000, far = +$("farM").value * 1000, soft = +$("softP").value / 100;
+  if (dmm == null) return 0;
+  if (dmm >= far) return soft;
+  if (dmm <= near) return 1;
+  const x = (far - dmm) / (far - near);                 // 0 at far … 1 at near
+  return soft + (1 - soft) * x * x;                     // eased: softly at the door, rising as you come close
+}
+
+function fov(cx, ox, oy, s, deg, col) {
+  const a = deg * Math.PI / 180;
+  cx.fillStyle = col; cx.beginPath(); cx.moveTo(ox, oy);
+  cx.arc(ox, oy, RANGE * s, Math.PI / 2 - FOV - a, Math.PI / 2 + FOV - a); cx.closePath(); cx.fill();
+}
+
+function drawMerged() {
+  const cx = cv.getContext("2d");
+  const W = cv.width, H = cv.height, s = (H - 80) / (RANGE + 700), ox = W / 2, oy = 40 + 700 * s;   // room for the wall radar behind
+  const wx = ox + wallCal[0] * s, wy = oy + wallCal[1] * s;
+  cx.clearRect(0, 0, W, H);
+  fov(cx, ox, oy, s, 0, "rgba(227,113,86,0.07)");
+  fov(cx, wx, wy, s, wallCal[2], "rgba(118,219,216,0.06)");
+  cx.strokeStyle = "#3A2C24"; cx.fillStyle = "#8A7A6C"; cx.font = "12px Arial"; cx.lineWidth = 1;
+  for (let r = 1; r <= 6; r++) {
+    cx.beginPath(); cx.arc(ox, oy, r * 1000 * s, Math.PI / 2 - FOV, Math.PI / 2 + FOV); cx.stroke();
+    cx.fillText(r + " m", ox + 4, oy + r * 1000 * s - 4);
+  }
+  for (const [x, y, c, lab] of [[ox, oy, COL.presence, "spotlight radar"], [wx, wy, COL.presence_wall, "wall radar"]]) {
+    cx.fillStyle = c; cx.beginPath(); cx.arc(x, y, 7, 0, 7); cx.fill();
+    cx.fillStyle = "#B8A99C"; cx.fillText(lab, x + 10, y + 4);
+  }
+  for (const [m, lab] of [[+$("nearM").value, "full"], [+$("farM").value, "soft"]]) {   // proximity rings (spotlight)
+    cx.setLineDash([3, 5]); cx.strokeStyle = "#E37156"; cx.beginPath(); cx.arc(ox, oy, m * 1000 * s, 0.2, Math.PI - 0.2); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = "#E37156"; cx.fillText(lab, ox - m * 1000 * s * 0.98 + 4, oy + m * 1000 * s * 0.2);
+  }
+  const out = {};
+  for (const key of ["presence", "presence_wall"]) {
+    const src = SRC[key], ps = people(src), col = COL[key];
+    for (const p of ps) { const tr = src.trails[p.n]; tr.push([p.x, p.y]); if (tr.length > 60) tr.shift(); }
+    for (const n of [1, 2, 3]) {
+      const tr = src.trails[n];
+      if (!ps.find(p => p.n === n)) { if (tr.length) tr.shift(); }
+      cx.strokeStyle = col; cx.globalAlpha = 0.35; cx.beginPath();
+      tr.forEach(([x, y], i) => { const X = ox + x * s, Y = oy + y * s; i ? cx.lineTo(X, Y) : cx.moveTo(X, Y); });
+      cx.stroke(); cx.globalAlpha = 1;
+    }
+    for (const p of ps) {
+      const X = ox + p.x * s, Y = oy + p.y * s;
+      cx.fillStyle = col; cx.beginPath(); cx.arc(X, Y, 10, 0, 7); cx.fill();
+      cx.fillStyle = "#171310"; cx.font = "bold 11px Arial"; cx.fillText(p.n, X - 3, Y + 4);
+    }
+    out[key] = ps;
+  }
+  for (const h of hostPeople) {                         // what the engine uses: fused + filtered
+    const X = ox + h.x * s, Y = oy + h.y * s;
+    cx.strokeStyle = "#F2EAE3"; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(X, Y, 18, 0, 7); cx.stroke(); cx.lineWidth = 1;
+    cx.fillStyle = "#F2EAE3"; cx.font = "12px Arial"; cx.fillText(fmt(h.d), X + 22, Y + 4);
+  }
+  return out;
+}
+
+const rowsOf = (ps, col) => ps.map(p =>
+  `<div class="row"><span><span class="dot" style="background:${col}"></span>Target ${p.n}</span>` +
+  `<span>x ${fmt(p.x)} · y ${fmt(p.y)} · <b>${fmt(p.d)}</b></span></div>`).join("");
+
+function draw() {
+  const all = drawMerged(), ps = all.presence, pw = all.presence_wall;
+  $("countw").textContent = SRC.presence_wall.count == null ? "–" : SRC.presence_wall.count;
+  $("wallc").textContent = pw.length ? `· ${pw.length} live` : "";
+  $("targetsw").innerHTML = rowsOf(pw, COL.presence_wall);
+  // side panel
+  $("count").textContent = count == null ? "–" : count;
+  $("hostc").textContent = hostPeople.length;
+  $("present").textContent = present == null ? "–" : (present ? "someone is here" : "nobody here");
+  $("targets").innerHTML = rowsOf(ps, COL.presence);
+  const near = hostPeople.length ? Math.min(...hostPeople.map(p => p.d)) : null;   // the engine's input
+  const lv = level(near);
+  $("near").textContent = near == null ? "nobody" : fmt(near);
+  $("lvl").style.width = (lv * 100).toFixed(0) + "%";
+  $("lvltxt").textContent = near == null ? "off" : (lv * 100).toFixed(0) + " %";
+  $("log").textContent = logLines.join("\n");
+  requestAnimationFrame(draw);
+}
+setInterval(() => { $("rate").textContent = msgs; msgs = 0; }, 1000);
+connect(); draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# Device layer for the room on the Pi "dexy": Home Assistant + Mosquitto (MQTT) + Music Assistant.
+# Runs beside our host (which stays the experience layer). See ../../Plan/Migration_HA.md.
+# Start:  cd ~/ha && docker compose up -d      Stop: docker compose down      Logs: docker compose logs -f
+# Ports:  Home Assistant 8123 · Music Assistant 8095 · ESPHome Device Builder 6052 · MQTT 1883 · our host stays on 8080
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/data:/mosquitto/data
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Rome
+    volumes:
+      - ./ha-config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro          # Bluetooth (optional)
+
+  music-assistant:
+    image: ghcr.io/music-assistant/server:latest
+    container_name: music-assistant
+    network_mode: host                  # needed for Sendspin/mDNS discovery of the speakers
+    restart: unless-stopped
+    volumes:
+      - ./ma-data:/data
+
+  esphome:                              # ESPHome Device Builder: create/update ESP devices in the browser
+    image: ghcr.io/esphome/esphome:stable
+    container_name: esphome
+    network_mode: host                  # finds the devices via mDNS, updates them over Wi-Fi
+    restart: unless-stopped
+    volumes:
+      - ./esphome:/config               # put our esphome/*.yaml + secrets.yaml here
+      - /etc/localtime:/etc/localtime:ro

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- iPad: "Add to Home Screen" opens it full-screen, without Safari's bars -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Room Clock">
+<meta name="theme-color" content="#171310">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<title>Clock</title>
+<!-- The room clock: a home object and a small exhibition stand for the wall screen (kellerkind, 1280×720).
+     Time, date + mission day, the seasons wheel (touch a season: what it means in the mission and in the
+     room), the circadian light as a glow on the right screen edge that hugs the wheel (touch: the day curve).
+     No animations: the glow is a background image, redrawn only when the room's light colour changes. -->
+<style>
+  @font-face { font-family: "Pangaia"; src: url("fonts/PPPangaia-Medium.otf") format("opentype"); font-weight: 500; }
+  @font-face { font-family: "Neue Montreal"; src: url("fonts/PPNeueMontreal-Regular.woff2") format("woff2"); font-weight: 400; }
+  :root { --bg: #171310; --tile: #211C17; --text: #F2EAE3; --text2: #B8A99C; --text3: #8A7A6C; --border: #3A2C24; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; cursor: none;
+               font-family: "Neue Montreal", system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+  .face { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 42vw; align-items: center;
+          padding: 0 9vw 0 7vw; }
+  .left { position: relative; }
+  .time { font: 500 43vh/0.86 "Pangaia", Georgia, serif; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; margin-left: -0.6vw; }
+  .date { margin-top: 5vh; font-size: 5.8vh; color: var(--text2); }
+  .day { margin-top: 1.2vh; font: 500 4.8vh "Pangaia", Georgia, serif; color: var(--text3); }
+  .wheel-box { display: flex; flex-direction: column; align-items: center; }
+  #wheel { width: 41vw; max-height: 80vh; overflow: visible; }
+  #wheel .seg { cursor: none; }
+  #wheel .dim { opacity: .38; }
+  #wheel .pick { opacity: 1; }
+  #wheel .pick path.arc { filter: brightness(1.2); }
+  .season { margin-top: .6vh; font-size: 3.6vh; color: var(--text2); letter-spacing: .18em; text-transform: uppercase; }
+  .hint { margin-top: .8vh; font-size: 2.4vh; color: var(--text3); letter-spacing: .06em; }
+  /* the circadian light: a glow on the right screen edge, wide at top and bottom, narrow where the wheel comes
+     close — it hugs the circle. A background image (canvas → PNG), redrawn only when the light colour changes. */
+  #edge { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 100% 100%; pointer-events: none; }
+  #edge-hit { position: absolute; right: 0; top: 0; bottom: 0; width: 9vw; }
+  /* exhibition card: what a season means (replaces the time while it is open) */
+  #card { display: none; }
+  .face.info .clock-view { display: none; }
+  .face.info #card { display: block; }
+  #card .eyebrow { font-size: 2.4vh; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); }
+  #card .name { font: 500 15vh/1 "Pangaia", Georgia, serif; margin: 1vh 0 1.2vh; }
+  #card .name { font-size: 13vh; }
+  #card .when { font-size: 3vh; color: var(--text2); margin-bottom: 3vh; }
+  #card .rows { display: grid; grid-template-columns: 17vh 1fr; row-gap: 1.8vh; column-gap: 1.6vw; }
+  #card .k { font-size: 2vh; letter-spacing: .16em; color: var(--text3); padding-top: .7vh; }
+  #card .v { font-size: 3vh; line-height: 1.25; }
+  #card .note { margin-top: 3vh; font-size: 2.4vh; color: var(--text3); }
+  /* the day curve, on touch */
+  #curve-sheet { position: absolute; inset: 0; background: var(--bg); display: none; align-items: center;
+                 justify-content: center; flex-direction: column; }
+  #curve-sheet.on { display: flex; }
+  #curve-sheet .title { font: 500 6vh "Pangaia", Georgia, serif; margin-bottom: 3vh; }
+  #curve-sheet .now { font-size: 3.6vh; color: var(--text2); margin-top: 2.5vh; }
+  #curve { width: 84vw; height: 46vh; overflow: visible; }
+  .lbl { font: 400 22px "Neue Montreal", system-ui, sans-serif; fill: var(--text3); }
+  .off { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 4vh; color: var(--text3); background: var(--bg); }
+  /* Spring Cleaning (S2): customise the spring while it runs — sounds on/off, skip days */
+  #spring { position: fixed; left: 7vw; right: 9vw; bottom: 3vh; display: none; flex-direction: column; gap: 1.2vh;
+            cursor: default; z-index: 5; background: rgba(23, 19, 16, .97); padding: 1.6vh 2vh; border-radius: 2vh; }
+  #spring.on { display: flex; }
+  #spring .stable { display: grid; grid-template-columns: 16vh 2fr 1fr; gap: 1vh 2vh; align-items: center; }
+  #spring .st-cell { display: flex; flex-wrap: wrap; gap: 1vh; }
+  #spring .st-h { font-size: 2.6vh; color: var(--text); }
+  #spring .st-h svg { width: 2.6vh; height: 2.6vh; vertical-align: -0.4vh; margin-right: 0.8vh; fill: none; stroke: #76DBD8;
+                        stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #spring .st-k { font-size: 1.9vh; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+  #spring button { font: inherit; font-size: 2.6vh; color: var(--text2); background: var(--tile); border: 1px solid var(--border);
+                   border-radius: 999px; padding: 1vh 2.4vh; }
+  #spring button.on { color: var(--bg); background: #76DBD8; border-color: #76DBD8; }
+  #spring button.skip { align-self: flex-end; color: var(--text); }
+</style>
+</head>
+<body>
+<div id="edge"></div>
+<div class="face" id="face">
+  <div class="left">
+    <div class="clock-view">
+      <div class="time" id="time">--:--</div>
+      <div class="date" id="date"></div>
+      <div class="day" id="day"></div>
+    </div>
+    <div id="card">
+      <div class="eyebrow" id="c-eyebrow"></div>
+      <div class="name" id="c-name"></div>
+      <div class="when" id="c-when"></div>
+      <div class="rows" id="c-rows"></div>
+      <div class="note" id="c-note"></div>
+    </div>
+  </div>
+  <div class="wheel-box">
+    <svg id="wheel" viewBox="46 50 500 490"></svg>
+    <div class="season" id="season"></div>
+    <div class="hint" id="hint">touch a season</div>
+  </div>
+</div>
+<div id="edge-hit"></div>
+<div id="spring"></div>
+<div id="curve-sheet">
+  <div class="title">Circadian light</div>
+  <svg id="curve" viewBox="0 0 1200 420" preserveAspectRatio="none"></svg>
+  <div class="now" id="curve-now"></div>
+</div>
+<div class="off" id="off">connecting to the room …</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const KSTOPS = [[1800, "#783526"], [2200, "#A14530"], [2700, "#E37156"], [3500, "#F2AD9D"], [4600, "#F2EAE3"]];
+const hexArr = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16) / 255);
+const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
+const rgbStr = (a) => `rgb(${a.map((v) => Math.round(Math.max(0, Math.min(1, v)) * 255)).join(",")})`;
+const fmtH = (h) => `${String(Math.floor(((h % 24) + 24) % 24)).padStart(2, "0")}:${String(Math.floor((h % 1) * 60)).padStart(2, "0")}`;
+const cap = (t) => (t ? t[0].toUpperCase() + t.slice(1) : "");
+const words = (a) => (a || []).map((n) => n.replace(/_/g, " ")).join(", ");
+function roomColour(k, blue) {                       // same palette mapping as the main page
+  let i = 0;
+  while (i < KSTOPS.length - 2 && k > KSTOPS[i + 1][0]) i++;
+  const [k0, c0] = KSTOPS[i], [k1, c1] = KSTOPS[i + 1];
+  return mix(mix(hexArr(c0), hexArr(c1), Math.max(0, Math.min(1, (k - k0) / (k1 - k0)))), hexArr("#76DBD8"), Math.min(0.75, (blue || 0) * 0.75));
+}
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// ---- Earth: what makes the season (axial tilt 23.4° → day length and sun height) and what the room takes from it
+const EARTH = {
+  spring: "after the March equinox the days grow fast; the sun climbs, first warm light and showers",
+  summer: "the longest days, around the June solstice; the sun stands highest",
+  autumn: "after the September equinox the days shorten; the light gets lower and warmer",
+  winter: "the shortest days, around the December solstice; a low sun and long nights",
+};
+// ---- Mars: tilt 25.2° (similar), but a 687-day year on an elliptical orbit → unequal seasons, dust storms
+// (northern hemisphere: season lengths in sols; the dust storm season = northern autumn + winter, near perihelion)
+const MARS = {
+  spring: { sols: "about 194 sols, the longest season", sky: "calm and clear; the north polar cap shrinks" },
+  summer: { sols: "about 178 sols", sky: "Mars is farthest from the sun: cool, a belt of thin ice clouds, few storms" },
+  autumn: { sols: "about 142 sols", sky: "Mars nears the sun: the dust storm season begins" },
+  winter: { sols: "about 154 sols", sky: "closest to the sun: dust storms peak, sometimes planet-wide; CO₂ frost at night" },
+};
+// ---- what each season means in the room (booklet 4.3, p. 39: Season interactions)
+const MEANING = {
+  summer: { mood: "active: meet, challenge, swap", sound: "insects, markets, home music", host: "challenges; seeds the archive" },
+  autumn: { mood: "comfy: warm, close, slow", sound: "rain, wind, a crackling fire", host: "small, low-effort offers" },
+  winter: { mood: "quiet: Mars is the novelty", sound: "hushed, near silence", host: "steps back; rest after an EVA" },
+  spring: { mood: "hopeful: upbeat, still cosy", sound: "birds, showers, home", host: "low-effort offers, merged with memories" },
+};
+
+// ---- seasons wheel (geometry as on the main page: inner ring Earth, outer ring Mars, launch April 2033)
+const RING = {
+  earth: { cx: 282, cy: 297, r: 125, stops: [[0, "#8AE6E2"], [0.55, "#4E9C99"], [1, "#2C6260"]],
+    segs: [["spring", 196.9, 157, "Apr–Jun 2033", "launch"], ["summer", 157, 119, "Jun–Sep 2033", "outbound to Mars"],
+           ["autumn", 119, 81, "Sep–Dec 2033", "arrival and surface stay at Mars"], ["winter", 81, 44.7, "Dec 2033–Mar 2034", "on the way home"],
+           ["spring", 44.7, 7, "Mar–Jun 2034", "on the way home"], ["summer", 7, -32, "Jun–Sep 2034", "on the way home"],
+           ["autumn", -32, -56.6, "Sep 2034", "back on Earth"]] },
+  mars: { cx: 284, cy: 292, r: 190, stops: [[0, "#EB8F7A"], [0.3, "#E37156"], [0.65, "#A14530"], [1, "#783526"]],
+    segs: [["summer", 199.8, 174.5, "", "at launch"], ["autumn", 174.5, 91.5, "", "while the crew flies out"],
+           ["winter", 91.5, 25, "", "during the surface stay"], ["spring", 25, -34.6, "", "on the way home"], ["summer", -34.6, -52, "", "at return"]] },
+};
+const EARTH_START = ["2033-04-15", "2033-06-21", "2033-09-22", "2033-12-21", "2034-03-20", "2034-06-21", "2034-09-22"];
+const MISSION_END = "2034-12-06";
+const LAUNCH = new Date("2033-04-15T12:00:00").getTime();
+const mday = (iso) => Math.round((new Date(iso + "T12:00:00").getTime() - LAUNCH) / 864e5) + 1;
+const ICON = {
+  spring: '<path d="M12 21v-8"/><path d="M12 13C12 9 9.5 6.5 5 6.5 5 11 8 13 12 13z"/><path d="M12 11c0-3.2 2.4-5.5 6.5-5.5 0 3.7-2.6 5.5-6.5 5.5z"/>',
+  summer: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
+  autumn: '<path d="M5 19C5 11 11 5 20 5c0 9-6 15-14 15z"/><path d="M5 19l8.5-8.5"/>',
+  winter: '<path d="M12 2.5v19M3.8 7.2l16.4 9.6M3.8 16.8l16.4-9.6"/><path d="M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5"/>',
+};
+const pt = (g, r, deg) => [g.cx + r * Math.cos((deg * Math.PI) / 180), g.cy + r * Math.sin((deg * Math.PI) / 180)];
+const arcD = (g, r, a0, a1) => { const [x0, y0] = pt(g, r, a0), [x1, y1] = pt(g, r, a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${Math.abs(a0 - a1) > 180 ? 1 : 0} 0 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+function lerpHex(stops, t) {
+  let i = 0;
+  while (i < stops.length - 2 && t > stops[i + 1][0]) i++;
+  const [t0, c0] = stops[i], [t1, c1] = stops[i + 1];
+  return rgbStr(mix(hexArr(c0), hexArr(c1), Math.max(0, Math.min(1, (t - t0) / (t1 - t0)))));
+}
+function dateAngle(date) {
+  let i = 0;
+  while (i < EARTH_START.length - 1 && date >= EARTH_START[i + 1]) i++;
+  const t = (s) => new Date(s + "T12:00:00").getTime(), end = i < EARTH_START.length - 1 ? EARTH_START[i + 1] : MISSION_END;
+  const f = Math.max(0, Math.min(1, (t(date) - t(EARTH_START[i])) / (t(end) - t(EARTH_START[i]))));
+  const [, a0, a1] = RING.earth.segs[i];
+  return { a: a0 + (a1 - a0) * f, i };
+}
+const svg = $("wheel"), segEls = { earth: [], mars: [] };
+
+for (const ring of ["mars", "earth"]) {
+  const g = RING[ring], total = g.segs[0][1] - g.segs[g.segs.length - 1][2];
+  g.segs.forEach(([season, a0, a1], i) => {
+    const mid = (a0 + a1) / 2, t = (g.segs[0][1] - mid) / total, col = lerpHex(g.stops, t);
+    const grp = el("g", { class: "seg", "data-season": season }, svg);
+    grp._info = { ring, i, season, mid };
+    el("path", { class: "arc", d: arcD(g, g.r, a0, a1), stroke: col, "stroke-width": 40, fill: "none" }, grp);
+    if (i === 0) el("circle", { cx: pt(g, g.r, a0)[0], cy: pt(g, g.r, a0)[1], r: 20, fill: col }, grp);
+    if (i === g.segs.length - 1) el("circle", { cx: pt(g, g.r, a1)[0], cy: pt(g, g.r, a1)[1], r: 20, fill: col }, grp);
+    if (Math.abs(a0 - a1) > 14) {                  // the season's icon in the middle of its piece
+      const [ix, iy] = pt(g, g.r, mid);
+      const ico = el("g", { transform: `translate(${(ix - 11).toFixed(1)} ${(iy - 11).toFixed(1)}) scale(.92)`, fill: "none",
+        stroke: t > 0.5 ? "#F2EAE3" : "#171310", "stroke-width": 2.3, "stroke-linecap": "round", "stroke-linejoin": "round" }, grp);
+      ico.innerHTML = ICON[season];
+    }
+    // a wide invisible arc as the touch target
+    el("path", { d: arcD(g, g.r, a0, a1), stroke: "transparent", "stroke-width": 64, fill: "none" }, grp);
+    grp.addEventListener("click", (e) => { e.stopPropagation(); openCard(grp); });
+    segEls[ring].push(grp);
+  });
+  g.segs.slice(1).forEach(([, a0]) => {
+    const [x0, y0] = pt(g, g.r - 20, a0), [x1, y1] = pt(g, g.r + 21, a0);
+    el("path", { d: `M${x0} ${y0}L${x1} ${y1}`, stroke: "#171310", "stroke-width": 3 }, svg);
+  });
+}
+el("circle", { cx: 144, cy: 136, r: 11, fill: "#E37156" }, svg);   // Mars
+el("circle", { cx: 190, cy: 181, r: 16, fill: "#76DBD8" }, svg);   // Earth
+const hereLine = el("path", { stroke: "#F2EAE3", "stroke-width": 5, "stroke-linecap": "round" }, svg);
+const hereDot = el("circle", { r: 8, fill: "#F2EAE3", stroke: "#171310", "stroke-width": 3 }, svg);
+
+let S = null, last = {}, picked = null, cardT = 0, edgeColour = null, edgeAlpha = 0.8;
+
+// ---- the edge glow: drawn once per colour change into a full-screen image. A strip of light along the right
+// edge, carved by a soft circle around the wheel → wide at top and bottom, narrow where the wheel is close.
+function renderEdge() {
+  if (!edgeColour) return;
+  const W = innerWidth, H = innerHeight, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  const m = svg.getScreenCTM(), [cx, cy] = [284, 294], R = 230 * (m ? m.a : 1);
+  const sx = m ? m.a * cx + m.e : W * 0.75, sy = m ? m.d * cy + m.f : H / 2;
+  const grad = g.createLinearGradient(W, 0, W * 0.55, 0);           // strongest at the screen edge
+  grad.addColorStop(0, edgeColour); grad.addColorStop(0.35, edgeColour); grad.addColorStop(1, "transparent");
+  g.globalAlpha = edgeAlpha; g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  g.globalAlpha = 1; g.globalCompositeOperation = "destination-out"; // carve the wheel's circle, softly
+  g.filter = "blur(40px)"; g.beginPath(); g.arc(sx, sy, R * 1.12, 0, 2 * Math.PI); g.fill();
+  $("edge").style.backgroundImage = `url(${cv.toDataURL("image/png")})`;
+}
+addEventListener("resize", () => renderEdge());
+function setText(id, t) { if (last[id] !== t) { last[id] = t; $(id).textContent = t; } }
+
+function lift(grp, on) {                            // the touched piece moves out of the ring
+  const { mid } = grp._info, d = on ? 16 : 0;
+  grp.setAttribute("transform", `translate(${(Math.cos((mid * Math.PI) / 180) * d).toFixed(1)} ${(Math.sin((mid * Math.PI) / 180) * d).toFixed(1)})`);
+}
+function openCard(grp) {
+  if (picked) lift(picked, false);
+  picked = grp; lift(grp, true);
+  const { ring, i, season } = grp._info, seg = RING[ring].segs[i], m = MEANING[season];
+  const info = S && S.season_info ? S.season_info[season] : null;
+  $("c-eyebrow").textContent = ring === "earth" ? "Earth season · what the room borrows" : "Mars season · outside the window";
+  $("c-name").textContent = cap(season);
+  $("c-name").style.color = ring === "earth" ? "#8AE6E2" : "#E37156";
+  if (ring === "earth") {
+    const end = i < EARTH_START.length - 1 ? EARTH_START[i + 1] : MISSION_END;
+    $("c-when").textContent = `${seg[3]} · mission days ${Math.max(1, mday(EARTH_START[i]))}–${mday(end) - 1} · ${seg[4]}`;
+  } else {
+    $("c-when").textContent = `northern Mars · tilted 25.2°, like Earth — but each season lasts about twice as long`;
+  }
+  const rows = ring === "earth" ? [
+    ["SEASON", `${EARTH[season]}`],
+    ["LIGHT", info ? `the room borrows the day: ${info.peak_k} K at noon, dawn ${fmtH(info.dawn_h)}, dusk ${fmtH(info.dusk_h)}` : ""],
+    ["SOUND", info ? `${m.sound} — here: ${words(info.day_beds)}; at night ${words(info.night_beds)}` : m.sound],
+    ["MOOD · HOST", `${m.mood} · ${m.host}`],
+  ] : [
+    ["ON MARS", MARS[season].sky],
+    ["LENGTH", `${MARS[season].sols} (a Martian year lasts 687 days)`],
+    ["FOR THE CREW", `${cap(seg[4])}; outside the window only — storms keep the crew in, the room stays familiar`],
+  ];
+  $("c-rows").innerHTML = rows.filter((r) => r[1]).map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join("");
+  $("c-note").textContent = ring === "mars" ? "The habitat keeps Earth's seasons inside; Mars sets the weather outside."
+    : S && S.season === season ? "This is the season in the room now." : "Touch the wheel again for another season.";
+  $("face").classList.add("info");
+  $("hint").style.visibility = "hidden";
+  clearTimeout(cardT); cardT = setTimeout(closeCard, 25000);
+}
+function closeCard() {
+  if (picked) lift(picked, false);
+  picked = null;
+  $("face").classList.remove("info");
+  $("hint").style.visibility = "visible";
+}
+$("face").addEventListener("click", closeCard);
+$("season").addEventListener("click", (e) => {      // the season's name opens the room's own season
+  e.stopPropagation();
+  const g = segEls.earth.find((x) => !x.classList.contains("dim")) || segEls.earth[0];
+  openCard(g);
+});
+
+const SPRING_LABEL = { winter: "Winter wind", gust: "Wind gust", rain: "Rain", birds: "Birds", bees: "Bees", song: "Here Comes the Sun",
+  cat: "Cat", frog: "Frog", crickets: "Crickets", birdcall: "Bird call", wind: "Autumn wind", shower: "Rain shower" };
+let ws = null;
+function springBar(s) {                               // only while Spring Cleaning runs
+  const on = s.running && s.scenario === "spring_cleaning" && s.spring;
+  $("spring").classList.toggle("on", !!on);
+  if (!on) return;
+  const sp = s.spring, chip = (k) => `<button data-snd="${k}" class="${sp.sounds[k] ? "on" : ""}">${SPRING_LABEL[k] || k}</button>`;
+  const cell = (l) => `<div class="st-cell">${l.map(chip).join("")}</div>`, up = (t) => t[0].toUpperCase() + t.slice(1);
+  const html = `<div class="stable"><span></span><span class="st-k">Ground</span><span class="st-k">Accent</span>` +
+    sp.rows.map((r) => `<span class="st-h"><svg viewBox="0 0 24 24">${ICON[r.season]}</svg>${up(r.season)}</span>${cell(r.general)}${cell(r.accent)}`).join("") + `</div>` +
+    `<button class="skip" data-skip="1">Skip days ›</button>`;
+  if (last.spring !== html) { last.spring = html; $("spring").innerHTML = html; }
+}
+$("spring").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const b = e.target.closest("button");
+  if (!b || !ws || ws.readyState !== 1) return;
+  const cmd = b.dataset.skip ? { cmd: "spring_skip" } : { cmd: "spring_sound", value: { name: b.dataset.snd, on: !b.classList.contains("on") } };
+  ws.send(JSON.stringify({ topic: "cmd", payload: cmd }));
+});
+function onState(s) {
+  springBar(s);
+  const r = s.room;
+  S = r;
+  $("off").style.display = "none";
+  setText("time", r.clock);
+  if (r.date) {
+    const d = new Date(r.date + "T12:00:00");
+    setText("date", d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }));
+    setText("day", `Mission day ${r.mission_day}`);
+  }
+  setText("season", r.season);
+  const key = `${r.date}|${r.season}`;
+  if (last.wheel !== key && r.date) {                // the wheel changes once a day at most
+    last.wheel = key;
+    const { a, i } = dateAngle(r.date);
+    segEls.earth.forEach((g, k) => g.classList.toggle("dim", k !== i));
+    segEls.mars.forEach((g) => g.classList.toggle("dim", g.dataset.season !== r.season));
+    const E = RING.earth, M = RING.mars, [x0, y0] = pt(E, E.r - 26, a), [x1, y1] = pt(M, M.r + 28, a), [dx, dy] = pt(M, M.r + 36, a);
+    hereLine.setAttribute("d", `M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}`);
+    hereDot.setAttribute("cx", dx.toFixed(1)); hereDot.setAttribute("cy", dy.toFixed(1));
+  }
+  const glow = `${rgbStr(roomColour(r.k, r.blue))}|${Math.round(r.level * 10)}`;   // changes every few minutes
+  if (last.glow !== glow) {                          // the halo: the room's light colour, stronger by day
+    last.glow = glow;
+    const c = rgbStr(roomColour(r.k, r.blue));
+    edgeColour = c;
+    edgeAlpha = r.ground ? 0.55 + 0.45 * Math.min(1, r.level / 0.55) : 0.12;
+    renderEdge();
+  }
+  if ($("curve-sheet").classList.contains("on")) drawCurve(r);
+}
+
+// ---- the day curve (on touch)
+function drawCurve(r) {
+  const W = 1200, H = 420, n = r.curve.length, maxL = Math.max(0.05, ...r.curve.map((c) => c[0])) * 1.1;
+  const X = (h) => (h / 24) * W, Y = (lv) => H - 50 - (lv / maxL) * (H - 90);
+  const pts = r.curve.map((c, i) => [X((24 * i) / n), Y(c[0])]).concat([[W, Y(r.curve[0][0])]]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const stops = r.curve.filter((_, i) => i % 2 === 0).map((c, i, a) =>
+    `<stop offset="${(i / (a.length - 1)).toFixed(3)}" stop-color="${rgbStr(roomColour(c[1], c[2] || 0))}"/>`).join("");
+  const h = r.hour, lv = r.curve[Math.floor((h / 24) * n) % n][0];
+  $("curve").innerHTML = `<defs><linearGradient id="kg" x1="0" x2="1">${stops}</linearGradient></defs>
+    <path d="${line} L${W} ${H - 50} L0 ${H - 50} Z" fill="url(#kg)" opacity=".22"/>
+    <path d="${line}" fill="none" stroke="url(#kg)" stroke-width="5"/>
+    ${[0, 6, 12, 18, 24].map((t) => `<text class="lbl" x="${Math.min(W - 30, X(t))}" y="${H - 12}" text-anchor="${t === 0 ? "start" : t === 24 ? "end" : "middle"}">${String(t % 24).padStart(2, "0")}:00</text>`).join("")}
+    <line x1="${X(h)}" x2="${X(h)}" y1="0" y2="${H - 50}" stroke="#F2EAE3" stroke-width="2"/>
+    <circle cx="${X(h)}" cy="${Y(lv)}" r="11" fill="#F2EAE3" stroke="#171310" stroke-width="4"/>`;
+  $("curve-now").textContent = r.ground ? `now ${r.clock} · ${r.k} K · ${Math.round(r.level * 100)} % · dawn ${fmtH(r.dawn_h)} · dusk ${fmtH(r.dusk_h)}` : "circadian light off";
+}
+let closeT = 0;
+$("edge-hit").addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeCard();
+  $("curve-sheet").classList.add("on");
+  if (S) drawCurve(S);
+  clearTimeout(closeT); closeT = setTimeout(() => $("curve-sheet").classList.remove("on"), 30000);
+});
+$("curve-sheet").addEventListener("click", () => $("curve-sheet").classList.remove("on"));
+
+// ---- connection: only the room state (2/s); the fast light/meter streams are ignored
+function connect() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.topic === "state" && m.payload && m.payload.room) onState(m.payload); };
+  ws.onclose = () => { $("off").style.display = "flex"; setTimeout(connect, 2000); };
+}
+connect();
+</script>
+</body>
+</html>

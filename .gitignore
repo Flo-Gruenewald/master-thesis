@@ -1,0 +1,15 @@
+# secrets: never commit (copy esphome/secrets.example.yaml → secrets.yaml locally)
+secrets.yaml
+.esphome/
+# media that is licensed, private or too big (see demo/Sounds/SOURCES.md)
+*.wav
+*.mp3
+*.woff2
+demo/host/traces/
+# local junk
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+_backup_*/
+demo/wled/backup_*/

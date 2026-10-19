@@ -1,0 +1,272 @@
+# Room config: the only file to edit when the room or the hardware changes.
+# Machine-specific values (audio device names) go in machine.toml next to this file;
+# it is merged on top. See machine.pi.toml for the Raspberry Pi.
+# Devices, IPs and wiring are documented in ..\Setup_Log\Setup_Reference.md.
+
+[host]
+topic_prefix = "easteregged"   # all MQTT topics start with this
+web_port = 8080
+mqtt_port = 1883
+scenario = "morning_jam"       # selected at start: morning_jam | spring_cleaning | miss_you_sis (switch on the web page)
+auto_start = false             # false = idle room: only GROUND + MIDDLE run; TOP moments start from the web page.
+                               # true = presence starts the selected scenario (toggle "Presence starts it" on the page)
+cooldown_s = 20                # after a natural end, wait before presence may start it again
+quiet_after_stop_s = 300       # after Stop on the web page, presence can't restart it for this long
+open_browser = true
+
+# ---- Messaging and Home Assistant (see ../Plan/Migration_HA.md) ----
+[mqtt]
+mode = "embedded"              # "embedded" = broker inside the host; "external" = another MQTT broker
+host = "127.0.0.1"             # external broker address (on the Pi with HA in Docker: 127.0.0.1)
+port = 1883
+# username / password: only in machine.toml on the Pi (never in synced files)
+
+[audio]
+hostapi = "WASAPI"                     # "WASAPI" (low latency) or "MME"
+output_device = "USB Audio Device"     # part of the device name; "" = Windows default
+input_device = "USB Audio Device"
+samplerate = 48000
+blocksize = 256
+output_channels = 2
+master_volume = 0.8
+stems_dir = "../Sounds"         # all sounds: Prototype/Demo/Sounds (relative to host\)
+latency_offset_ms = 0          # positive = captured sounds land later in the loop
+
+[tempo]
+bpm = 84
+beats_per_loop = 8             # MJ_BeatLoop is 8 beats (2 bars)
+steps_per_beat = 4             # hits snap to 16ths, humming snaps to beats
+
+[mic]
+sensitivity = 0.5              # 0..1, higher = quieter sounds count
+min_level = 0.01               # absolute floor (RMS), ignores room hiss
+hum_after_ms = 350             # a sound held longer than this counts as humming
+hit_length_ms = 260            # length of a captured tap/ding
+max_layers = 12                # oldest layer fades when a new one comes in
+layer_loops = 8                # a layer plays this many loops, then fades (ephemeral)
+layer_gain = 0.9
+tap_min_strength = 0.25      # how clearly a sound must stand out to count as a "tap" (S2 rewind, S3 postcard)
+
+[presence]
+near_cm = 120                  # closer than this = someone is here
+hysteresis_cm = 20             # must move this much further away to count as gone
+confirm_readings = 3           # consecutive (median) readings before the state flips
+median_of = 5                  # median of the last N distances (ignores stray echoes)
+ghost_confirm_s = 1.0          # radar: a target counts after being seen steadily this long
+ghost_merge_mm = 450           # radar: targets closer than this to a counted one are the same person
+# 18.10.2026 radar test (00_Bots/Prototype/Tools/radar_test.py, 6 phases, 2 people): the ghosts were frozen tracks
+# (identical x/y for 25 s on both radars) and a target < 50 cm in front of the ring light; the wall radar sees
+# the same person ~ (+905, -320) mm off the spotlight radar's coordinates (median error 14 cm).
+stale_s = 3.0                  # a target that hasn't moved for this long is a ghost (real people always jitter)
+stale_mm = 10                  #   "moved" = changed by more than this
+spot_min_mm = 550              # spotlight radar: closer than this = the lamp / its own housing, ignored
+wall_min_mm = 300              # wall radar: same
+wall_max_mm = 3000             # wall radar: farther than this = the door side / reflections (test: people ≤ 2 m, ghost 3.4 m)
+wall_offset_mm = [905, -320]   # wall radar → spotlight radar coordinates (fitted from the test)
+wall_rot_deg = 0
+
+[light]
+fps = 40
+max_brightness = 1.0           # WLED's current limiter remains the hardware safety cap
+idle_level = 0.08              # faint glow while idle (also keeps power banks awake)
+top_spotlight_color = "#E37156"  # warm-rust cue for scenario activity and location
+top_spotlight_idle = 0.0         # floor while no scenario runs (proximity below lights it when someone is there)
+top_spotlight_active = 1.0       # (legacy) a running scenario now sets the spotlight itself
+accent_base = 1.3                # accent glow follows the GROUND light: day level × this (an accent to it, not a separate light)
+accent_floor = 0.12              # never fully off (in day-level units)
+accent_tint_mix = 0.35           # only a tint of the circadian accent colour over the ground colour
+accent_boost = 2.0               # weather accents (sun, birds, rain …) twice as strong
+accent_level = 0                 # 0 = follow the day (06.10: fixed 0.6 was too strong/independent)
+accent_colour = "expand"         # glow colour: "expand" (08.10) = the ground hue, saturated: sky blue in the morning,
+                                 #   sunset red-orange in the evening, deep red at night; "circadian" / "season" = before
+accent_over_ground = 1.25        # expand: glow = ground level × this (a bit brighter than the wall), floor = accent_floor
+accent_saturation = 1.0          # expand: remove the shared white of the ground colour before deriving the accent hue
+accent_warm_push = 0.85          # expand: warm ground → towards sunset red-orange
+accent_cool_push = 0.9           # expand: cool ground → towards sky blue
+accent_react = 1.2               # the glow brightens with the accent sounds it plays (not with the mic)
+
+[light.proximity]                # TOP spotlight while no scenario runs, driven by the radar's nearest person
+enabled = true
+full_m = 0.6                     # this close (or closer): full brightness
+soft_m = 4.0                     # this far (or farther, still in view): soft_level
+soft_level = 0.10                # the soft glow when someone enters
+fade_s = 1.5                     # time for a full fade (0 → 100 %)
+
+# Light subnodes: one entry per ESP running WLED. Offline ones are retried every few seconds.
+[[wled]]
+id = "strip1"                  # ACCENT: table unit (08.10) = ESP32-C3 SuperMini, WLED 0.15.1 env table_c3 (../wled/),
+host = "192.168.178.173"       #   89 RGBW LEDs on GPIO7, current limit 1.8 A in WLED, power bank; INMP441 mic (WLED sound sync)
+mdns = "table-unit"
+led_count = 89                 # new strip, counted 05.10
+rgbw = true
+white_k = 4000                 # colour of the strip's white LED (check the reel: WW ~3000, NW ~4000, CW ~6000)
+# Before (06.10, strip on dexy, no ESP): kind = "spi", spi_bus = 1, spi_device = 0, max_ma = 1200 (pin 38, dtoverlay=spi1-1cs)
+
+[[wled]]
+id = "top"                     # TOP subnode: ESP32 DevKit V1, WLED 0.15.1 + LD2450 radar (../wled/), LEDs on GPIO4
+host = "192.168.178.170"       # old G address (fallback only); on FLO-WORK it gets a DHCP address → found by mDNS
+mdns = "spotlight-unit"        # renamed 08.10 (was easteregged-top); MQTT broker in WLED = laptop 192.168.137.1 (15.10; was dexy .137.200)
+led_count = 77
+rgbw = true
+white_k = 4000
+
+[[wled]]
+id = "wall"                    # GROUND: wall strip (60 LEDs) on the Gledopto GL-C-015WL (WLED, built-in level shifter).
+host = "192.168.178.171"       #   kellerkind's 3.3 V pin did not drive this strip reliably on a full 5 V supply (06.10);
+mdns = "wall-unit"             #   renamed 08.10 (was easteregged-wall); host above = old G address (fallback only).
+                               #   kellerkind keeps sound + screen. Pi option: http_port 8081 + pi/kellerkind/led_node.py
+led_count = 60
+rgbw = true
+white_k = 4000
+host_max_ma = 1800             # 18.10: host keeps the wall under WLED's 2000 mA limit (minus ~100 mA for the ESP; was 580/800),
+ledma = 55                     #   so WLED's limiter never dims frame by frame (white flickered). WLED's mA per LED.
+gain = 2.5                     # 18.10: the wall was too dark (660 mA at midday) → 2.5× brighter, the cap above still holds
+
+[colors]                       # Mars Rust
+dawn = "#783526"
+rust = "#A14530"
+warm = "#E37156"
+peach = "#F2AD9D"
+bone = "#F2EAE3"
+earth = "#76DBD8"              # reserved for signals from Earth (scenario 3)
+
+# Naming (matches the booklet's node diagram):
+#   node    = the room, run by this host (the controller)
+#   subnode = a device on the network (ESP with WLED, presence sensor ESP or Pi)
+#   spot    = one place in the room: speaker channels + a light zone (WLED id, first LED, count)
+# Sensorial levels: GROUND = all spots (room program), MIDDLE = weather accents on the spots
+# with middle = true (default: every spot that isn't a moment spot), TOP = the moment, at the
+# spot(s) with moment = true.
+# One strip only? Split it: two spots on the same light, e.g. leds = [0, 38] and [38, 39].
+# More speakers later: channels = [0], [1], ... (USB interface outputs 0..3).
+# With a position radar (LD2450): pos = [x_mm, y_mm] as seen from the sensor (x left/right, y away from it);
+# the host then knows which spot a person is nearest to.
+[[spots]]
+id = "table"
+name = "Table · accent"           # ACCENT subnode: table unit (ESP32-C3, WLED) + USB speaker on dexy
+level = "accent"
+channels = [0, 1]
+light = "strip1"
+leds = [0, 89]
+# pos = [0, 1200]
+
+[[spots]]
+id = "top_spotlight"
+name = "TOP spotlight"            # TOP subnode: ring light + radar (ESP32 DevKit WLED); its sound = the table speaker
+level = "top"
+channels = [0, 1]
+light = "top"
+leds = [0, 77]
+# pos = [1500, 3000]
+
+[[spots]]
+id = "wall"
+name = "Wall · ground"            # GROUND subnode: circadian light on the wall (Gledopto); sound: kellerkind's AUX (ground_player)
+level = "ground"
+channels = []
+light = "wall"
+leds = [0, 60]
+
+# ---- Room program: GROUND (circadian day, season, soundscape) and MIDDLE (weather accents) ----
+[room]
+season = "summer"              # summer | autumn | winter | spring (seasons below)
+day_minutes = 0                # 0 = the real clock; 8 = a whole day in 8 minutes (demo)
+clock_offset_h = 0             # shift the room's day, e.g. -6 to show the evening at noon
+ground = true                  # circadian light + soundscape bed
+mission_launch = "2033-04-15"  # opposition-class mission: launch day (day 1); the room's date counts from here
+date = ""                      # empty = real time follows today's date in the mission year (and sets the season);
+                               # a fixed start date ("2033-09-01") instead holds until "Back to now"
+sleep_h = 22.5                 # crew bedtime: warm/dim from 3 h before (pre-sleep), dark from here; wake = the seasons' dawn_h
+middle = true                  # weather accents
+accent_every_s = [90, 240]     # random gap between accents (real clock)
+accent_every_demo_s = [25, 60] # gap in demo mode (day_minutes > 0)
+duck_level = 0.6               # Ground light/sound level while a TOP moment runs
+soundscape_gain = 0.15
+accent_gain = 0.5
+room_output = "main"           # "main" = everything from the main output; or a second sound card by (part of) its name
+room_latency_ms = 0            # with a second sound card: how much later it sounds than the main output
+
+# Seasons (booklet 4.3): override any value of the defaults in core/room.py.
+# The circadian anchor stays put: dawn_h (= crew wake, dawn simulation starts 30 min before) is the same in
+# every season on purpose — moving it would shift the crew's clock. A season changes dusk_h (the golden
+# evening; light after sleep_h - 3 h stays warm anyway), peak_level/peak_k (the day), evening_level, and
+# blue (the morning melanopic boost, strongest in winter). Research notes: core/room.py, top.
+# Beds: rain, birds, crickets, wind, winter, room_tone (real recordings in Sounds/ground), fire (placeholder). Accents: sun_ray, cloud, bird_cross, bee_pass,
+# cat_meow, wind_gust, rain_pass, thunder_far. Recorded files in Sounds/ground and Sounds/accent win.
+[seasons.summer]
+peak_k = 6500
+dawn_h = 6.5
+dusk_h = 21.0
+peak_level = 0.55
+night_level = 0.04
+evening_level = 0.3
+blue = 0.5
+day_beds = ["crickets"]
+night_beds = ["crickets", "room_tone"]
+accents = ["sun_ray", "bird_cross", "bee_pass", "cloud", "thunder_far"]
+
+[seasons.autumn]
+peak_k = 5000
+dawn_h = 6.5
+dusk_h = 19.0
+peak_level = 0.45
+night_level = 0.04
+evening_level = 0.2
+blue = 0.75
+day_beds = ["wind"]
+night_beds = ["rain", "fire"]
+accents = ["wind_gust", "rain_pass", "cloud", "cat_meow", "thunder_far"]
+
+[seasons.winter]
+peak_k = 4500
+dawn_h = 6.5
+dusk_h = 17.5
+peak_level = 0.4
+night_level = 0.04
+evening_level = 0.14
+blue = 1.0
+day_beds = ["winter"]
+night_beds = ["room_tone"]
+accents = ["wind_gust", "cloud", "cat_meow"]
+
+[seasons.spring]
+peak_k = 6000
+dawn_h = 6.5
+dusk_h = 20.0
+peak_level = 0.5
+night_level = 0.04
+evening_level = 0.24
+blue = 0.65
+day_beds = ["birds", "rain"]
+night_beds = ["rain"]
+accents = ["bird_cross", "rain_pass", "sun_ray", "cat_meow", "cloud"]
+
+# Table unit mic (ESP32-C3 + INMP441, firmware ../wled/usermod_audio_stream) streams raw audio here (UDP).
+# With it, Morning Jam records whole bars as rows instead of detecting taps (see core/netmic.py).
+[netmic]
+enabled = true
+port = 7010
+samplerate = 16000
+latency_ms = 60                # I2S buffer + Wi-Fi; tune by ear: clap on the beat, the row should land on the beat
+gain = 1.0
+
+[morning_jam]                  # the table mic is recorded loop by loop; a loop louder than the threshold becomes a row
+row_threshold = 0.002          # RMS of a 20 ms window (start value; live: the mic line on the web page). 15.10: room/beat 0.001, taps 0.02–0.05
+row_gate = true                # keep only what was played in a row, silence the room in between
+wake_seconds = 6               # sunrise before the beat starts
+idle_timeout_s = 45            # nobody played for this long → the jam winds down
+max_minutes = 2                # the jam ends after this at the latest
+host_layer_after = 3           # the host adds its shaker once there are this many rows
+
+[room_map]                     # S2 mini radar (web page): top view in mm, origin = the spotlight's radar, y = where it looks
+table = [-450, -250, 900, 500]  # x, y, width, depth of the table
+wall = [-700, -650, 1400]       # x, y, length of the wall unit
+wall_radar = [0, -650, 0]       # x, y, facing (degrees, 0 = same direction as the spotlight radar)
+range_mm = 3500                 # how far the radars look (drawn)
+
+[spring_cleaning]              # Scenario 2 (passive): the season turns; "Rewind?" replays the last jam
+
+[miss_you_sis]                 # Scenario 3: starts when a postcard arrives (web page / MQTT in/postcard)
+wait_s = 45                    # nobody picks the card up this long: a soft taste of Rome by itself
+voice_gain = 1.0               # Lena's voice (Sounds/s3/lena_rome.wav|mp3, when it exists)
+rest_s = 20                    # Rome faded out and the card lies still this long → back home (end)

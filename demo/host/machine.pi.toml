@@ -1,0 +1,31 @@
+# Raspberry Pi 5 "dexy": copied to machine.toml on the Pi; merged on top of room.toml.
+[audio]
+hostapi = "ALSA"
+output_device = "USB2.0 Device"        # USB speaker (hw:3,0), 48 kHz only
+input_device = "USB PnP Sound Device"  # USB mic (hw:2,0)
+samplerate = 48000
+blocksize = 512
+
+[host]
+open_browser = false
+
+[room]
+room_output = "pw:marsboy"            # GROUND soundscape on the Marsboy (Bluetooth, paired 07.10, C9:5A:02:39:0B:2E); was "node:kellerkind"
+room_buffer_ms = 350                   # audio kept ahead for the Marsboy (less stutter, more lag; fine for ambient sound)
+room_latency_ms = 300                  # only used by travelling accents when no accent_output is connected
+accent_output = "pw:JBL"               # ACCENT sounds on the JBL GO Essential (Bluetooth, paired 06.10, F8:5C:7E:C0:2C:8D);
+                                       # travelling accents move table speaker <-> JBL
+accent_latency_ms = 990                # how late the JBL sounds (buffer + Bluetooth); tuned by ear 06.10 (950 table first, 1050 JBL first)
+accent_buffer_ms = 350                 # audio kept ahead for the JBL (less stutter, more lag)
+
+# Home Assistant stack in Docker on dexy (Plan/Migration_HA.md, decided 01.10): Mosquitto is the broker now.
+[mqtt]
+mode = "external"
+host = "127.0.0.1"
+port = 1883
+
+[ha]
+discovery = true                       # the room appears in HA once the MQTT integration is added
+url = "http://127.0.0.1:8123"
+# token: in ~/.easteregged_ha_token on the Pi (run.sh exports it as HA_TOKEN) — never in a synced file
+# room_player = "media_player.…"   # set once the Music Assistant player/group exists

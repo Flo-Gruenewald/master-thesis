@@ -1,0 +1,19 @@
+# Laptop as the host (15.10.2026, supervisor: all sound from the PC so the whole room hears it).
+# Merged on top of room.toml. The Pi deploy overwrites machine.toml on the Pi with machine.pi.toml, so this file
+# never reaches the Pi. Never run this host while the Pi host runs (both would drive the LEDs).
+[audio]
+hostapi = "WASAPI"
+output_device = ""          # "" = Windows default output → pick HDMI / the room's speakers in Windows sound settings
+input_device = "USB"        # the USB mic for Morning Jam when plugged in; otherwise the Windows default mic
+samplerate = 48000
+blocksize = 256
+
+[host]
+open_browser = true
+
+[room]
+room_output = "main"        # soundscape, accents and scenario sounds all from the one PC output
+room_latency_ms = 0
+
+[mqtt]
+mode = "embedded"           # broker inside the host (the spotlight's WLED must point its MQTT broker to this PC)

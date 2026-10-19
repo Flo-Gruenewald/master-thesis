@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room Host</title>
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/style.css?v=64">
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== rail ===== -->
+  <nav class="rail">
+    <div class="mark" title="Habitat Halo · the room host"><img src="/static/logo.svg" alt="Habitat Halo"></div>
+    <a href="#home" data-page="home" title="Home">
+      <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#node" data-page="node" title="Node">
+      <svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
+      <span>Node</span>
+    </a>
+    <a href="#s1" data-page="s1" title="Morning Jam">
+      <svg viewBox="0 0 24 24"><text x="12" y="18" text-anchor="middle">S1</text></svg>
+      <span>Morning Jam</span>
+    </a>
+    <a href="#s2" data-page="s2" title="Spring Cleaning">
+      <svg viewBox="0 0 24 24"><text x="12" y="18" text-anchor="middle">S2</text></svg>
+      <span>Spring Cleaning</span>
+    </a>
+    <a href="#s3" data-page="s3" title="I Miss You, Sis">
+      <svg viewBox="0 0 24 24"><text x="12" y="18" text-anchor="middle">S3</text></svg>
+      <span>I Miss You, Sis</span>
+    </a>
+    <a href="#radar" data-page="radar" title="Radar">
+      <svg viewBox="0 0 24 24"><path d="M12 4v0"/><circle cx="12" cy="4.5" r="1.3"/><path d="M5 12a8 8 0 0 1 14 0"/><path d="M8 15a4.5 4.5 0 0 1 8 0"/><path d="M12 4.5 4 19M12 4.5 20 19"/></svg>
+      <span>Radar</span>
+    </a>
+    <div class="spacer"></div>
+    <button id="power-btn" title="Turn the room off">
+      <svg viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.3 6.6a8 8 0 1 0 11.4 0"/></svg>
+      <span>Off</span>
+    </button>
+  </nav>
+
+  <main>
+    <header class="top">
+      <h1 id="page-title">Home</h1>
+      <div class="status">
+        <span class="chip" id="moment-chip">idle</span>
+        <span class="muted" id="hdr-clock">--:--</span>
+        <span class="conn" id="conn" title="connecting…"></span>
+      </div>
+    </header>
+
+    <!-- ===== HOME ===== -->
+    <section class="page" id="page-home">
+      <div class="home-grid">
+        <div class="tile t-clock">
+          <div class="label">Room clock</div>
+          <div class="sim-date" id="sim-date"></div>
+          <div class="big" id="clock">--:--</div>
+          <div class="clock-row"><span class="muted" id="clock-info"></span><button class="btn small-btn" id="now-btn">Back to now</button></div>
+          <div class="speed-row"><span class="label">Speed</span>
+            <div class="seg" id="speeds"><button data-v="0">Real</button><button data-v="8">8 min</button><button data-v="2">2 min</button></div>
+          </div>
+        </div>
+
+        <div class="tile t-wheel">
+          <div class="tile-head"><h2>Seasons</h2><span class="muted small">opposition-class mission</span></div>
+          <svg id="wheel" viewBox="66 70 440 440"></svg>
+          <div class="wheel-info"><div class="label" id="w-sub"></div><div class="w-name" id="w-name"></div><div class="muted small" id="w-sub2"></div><div class="small" id="w-sub3"></div></div>
+          <div class="wheel-key"><span><i style="background:var(--middle)"></i>inner: Earth</span><span><i style="background:var(--top)"></i>outer: Mars</span></div>
+        </div>
+
+        <div class="tile t-curve">
+          <div class="tile-head">
+            <div class="curve-title"><h2>Circadian light</h2><span class="now-chip"><i class="swatch" id="now-swatch"></i><b id="now-phase">—</b></span></div>
+            <div class="legend"><span><i class="lg-line"></i>light · colour</span><span><i class="lg-blue"></i>morning blue</span><span><i class="lg-post"></i>post-sleep</span><span><i class="lg-warm"></i>pre-sleep</span></div>
+          </div>
+          <div class="curve-wrap">
+            <svg id="curve" viewBox="0 0 960 260" preserveAspectRatio="none"></svg>
+            <div class="curve-labels" id="curve-labels"></div>
+            <div class="curve-now" id="curve-now"></div>
+          </div>
+          <div class="axis"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
+        </div>
+
+        <div class="tile t-events">
+          <div class="tile-head"><h2>Events</h2><label class="tog small"><input type="checkbox" id="ev-off"><i></i>Turn off events</label></div>
+          <div class="ev-track" id="feed"><div class="ev-mk" id="ev-mk"></div><div class="ev-list" id="ev-list"></div></div>
+        </div>
+        <div class="sync" id="sync"></div>
+      </div>
+    </section>
+
+    <!-- ===== NODE ===== -->
+    <section class="page" id="page-node">
+      <div class="node-grid">
+        <div class="tile node-art" id="node-art" aria-label="MVP room node: wall piece, table edge, ring lamp"></div>
+        <div class="tile node-side" id="node-info"></div>
+      </div>
+    </section>
+
+    <!-- ===== SCENARIOS ===== -->
+    <section class="page" id="page-scenarios">
+      <div class="cards" id="cards"></div>
+    </section>
+    <!-- ===== RADAR ===== -->
+    <section class="page" id="page-radar">
+      <iframe class="radar-frame" id="radar-frame" title="Live radar" data-src="/static/radar.html?embed=1&v=35"></iframe>
+    </section>
+  </main>
+</div>
+
+<!-- ===== turn off ===== -->
+<div class="sheet" id="confirm" hidden>
+  <div class="sheet-box">
+    <h2>Turn the room off?</h2>
+    <p class="muted">The moment stops, sound and light fade out, the strips switch off. The Pi stays on.</p>
+    <div class="row end">
+      <button class="btn" id="confirm-restart" title="Reboot the wall, table and spotlight units (back in ~15 s)">Restart all units</button>
+      <button class="btn" id="confirm-no">Cancel</button>
+      <button class="btn alert" id="confirm-yes">Turn off</button>
+    </div>
+  </div>
+</div>
+<div class="off" id="off" hidden>
+  <div class="off-box">
+    <img src="/static/logo.svg" alt="" class="off-logo">
+    <div class="big">The room is off</div>
+    <button class="btn primary" id="turn-on">Turn on</button>
+  </div>
+</div>
+
+<script src="/static/app.js?v=64"></script>
+</body>
+</html>

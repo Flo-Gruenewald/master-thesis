@@ -1,0 +1,104 @@
+# Presence subnode: LD2450 radar (up to 3 people with X/Y) on an ESP32. Validated with ESPHome 2026.6.5.
+# Publishes to the host's MQTT topics (works with the embedded broker today and with
+# Home Assistant's Mosquitto later) AND offers the native API to Home Assistant.
+#
+# Wiring: LD2450 5V → ESP32 VIN (5 V), GND → GND, LD2450 TX → GPIO16 (RX2), LD2450 RX → GPIO17 (TX2).
+# Flash: `esphome run presence_ld2450.yaml` (USB the first time, then over Wi-Fi), or web.esphome.io.
+# Needs secrets.yaml next to this file (copy secrets.example.yaml; never commit the real one).
+# LD2450 firmware must be V2.02.23090617 or later (check with the HLKRadarTool app).
+
+substitutions:
+  name: presence-1
+  broker: 192.168.178.158      # the Pi (embedded broker today, HA's Mosquitto later)
+
+esphome:
+  name: ${name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  baud_rate: 0                  # UART0 stays free
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap: {}                        # fallback hotspot "presence-1" if the Wi-Fi is unknown
+captive_portal:
+
+ota:
+  - platform: esphome
+
+# Native API for Home Assistant. reboot_timeout: 0s → no reboot every 15 min while HA isn't there yet.
+api:
+  reboot_timeout: 0s
+
+mqtt:
+  broker: ${broker}
+  username: !secret mqtt_username   # leave empty ("") for the embedded broker
+  password: !secret mqtt_password
+  discovery: false                  # HA uses the native API instead
+  topic_prefix: easteregged/esphome/${name}
+  birth_message:
+    topic: easteregged/status/presence
+    payload: online
+    retain: true
+  will_message:
+    topic: easteregged/status/presence
+    payload: offline
+    retain: true
+
+uart:
+  id: uart_ld2450
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+ld2450:
+  id: ld2450_radar
+  uart_id: uart_ld2450
+
+binary_sensor:
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    has_target:
+      name: Presence
+      state_topic: easteregged/in/presence/state          # ON / OFF
+
+sensor:
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    target_count:
+      name: People
+      state_topic: easteregged/in/presence/count
+    target_1:
+      x:
+        name: Target-1 X
+        state_topic: easteregged/in/presence/target/1/x   # mm, left/right of the sensor
+        filters: [throttle: 200ms]
+      y:
+        name: Target-1 Y
+        state_topic: easteregged/in/presence/target/1/y   # mm, away from the sensor
+        filters: [throttle: 200ms]
+    target_2:
+      x:
+        name: Target-2 X
+        state_topic: easteregged/in/presence/target/2/x
+        filters: [throttle: 200ms]
+      y:
+        name: Target-2 Y
+        state_topic: easteregged/in/presence/target/2/y
+        filters: [throttle: 200ms]
+    target_3:
+      x:
+        name: Target-3 X
+        state_topic: easteregged/in/presence/target/3/x
+        filters: [throttle: 200ms]
+      y:
+        name: Target-3 Y
+        state_topic: easteregged/in/presence/target/3/y
+        filters: [throttle: 200ms]

@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1080" width="1800" height="1080" font-family="PP Neue Montreal, Neue Montreal, Helvetica Neue, Arial, sans-serif">
+  <title>Physical prototype — system diagram (01.10.2026)</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#B8A99C"/></marker>
+    <marker id="aL" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#E37156"/></marker>
+    <marker id="aM" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#76DBD8"/></marker>
+    <marker id="aG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#F2EAE3"/></marker>
+    <marker id="aD" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8A7A6C"/></marker>
+    <style>
+      .title { font-family: "PP Pangaia", Georgia, serif; font-size: 38px; fill: #F2EAE3; }
+      .sub   { font-size: 17px; fill: #B8A99C; }
+      .h     { font-size: 22px; font-weight: 500; fill: #F2EAE3; }
+      .b     { font-size: 18px; font-weight: 500; fill: #F2EAE3; }
+      .t     { font-size: 15px; fill: #B8A99C; }
+      .s     { font-size: 13px; fill: #8A7A6C; }
+      .cap   { font-size: 12px; letter-spacing: 1.4px; fill: #8A7A6C; }
+      .tile  { fill: #211C17; stroke: #3A2C24; stroke-width: 1.5; }
+      .zone  { fill: #1B1612; stroke: #3A2C24; stroke-width: 1.2; }
+      .box   { fill: #262019; stroke: #3A2C24; stroke-width: 1.2; }
+      .next  { fill: none; stroke: #8A7A6C; stroke-width: 1.4; stroke-dasharray: 7 6; }
+      .ln    { stroke: #B8A99C; stroke-width: 1.8; fill: none; }
+      .lnL   { stroke: #E37156; stroke-width: 2.4; fill: none; }
+      .lnT   { stroke: #E37156; stroke-width: 2.4; fill: none; }
+      .lnM   { stroke: #76DBD8; stroke-width: 2.4; fill: none; }
+      .lnG   { stroke: #F2EAE3; stroke-width: 2.4; fill: none; }
+      .dash  { stroke-dasharray: 6 6; }
+      .lnD   { stroke: #8A7A6C; stroke-width: 1.6; fill: none; stroke-dasharray: 6 6; }
+      .pill  { fill: #171310; stroke: #3A2C24; stroke-width: 1; }
+      .pt    { font-size: 13px; fill: #F2EAE3; }
+      .ptL   { font-size: 13px; fill: #E37156; }
+      .ptD   { font-size: 13px; fill: #8A7A6C; }
+      .tag   { font-size: 11px; letter-spacing: 1px; font-weight: 500; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1080" fill="#171310"/>
+  <text x="60" y="72" class="title">Physical prototype · system diagram</text>
+  <text x="60" y="104" class="sub">Who talks to whom, over which protocol. Home network 192.168.178.x (FritzBox). State 01.10.2026; dashed = planned.</text>
+
+  <!-- ========================= PC ========================= -->
+  <rect x="60" y="170" width="320" height="200" rx="20" class="tile"/>
+  <text x="86" y="212" class="h">PC</text>
+  <text x="86" y="238" class="s">Windows · LAN · .101</text>
+  <text x="86" y="280" class="t">browser</text>
+  <text x="86" y="306" class="s">control page, HA, MA, ESPHome</text>
+  <text x="86" y="342" class="t">SSH · deploy</text>
+  <path d="M380 290 H458" class="ln" marker-end="url(#a)"/>
+  <rect x="384" y="262" width="66" height="22" rx="11" class="pill"/><text x="417" y="278" text-anchor="middle" class="pt">HTTP</text>
+  <path d="M380 340 H458" class="ln" marker-end="url(#a)"/>
+  <rect x="384" y="312" width="66" height="22" rx="11" class="pill"/><text x="417" y="328" text-anchor="middle" class="pt">SSH 22</text>
+
+  <!-- ========================= Pi ========================= -->
+  <rect x="460" y="150" width="760" height="690" rx="24" class="tile" stroke="#5A4235"/>
+  <text x="488" y="192" class="h">Raspberry Pi 5 · “dexy”</text>
+  <text x="488" y="218" class="s">Debian 13 · Wi-Fi 192.168.178.158 · Python 3.13 · Docker</text>
+
+  <!-- native zone -->
+  <rect x="488" y="276" width="332" height="530" rx="16" class="zone"/>
+  <text x="508" y="302" class="cap">NATIVE · PYTHON VENV · CRONTAB</text>
+  <rect x="508" y="318" width="292" height="300" rx="12" class="box"/>
+  <text x="528" y="352" class="b">host · main.py</text>
+  <text x="528" y="386" class="t">web page · :8080</text>
+  <text x="528" y="414" class="t">room stream · /room.wav</text>
+  <text x="528" y="442" class="t">light engine</text>
+  <text x="528" y="470" class="t">audio engine · ALSA</text>
+  <text x="528" y="498" class="t">mic listener</text>
+  <text x="528" y="526" class="t">room program · scenarios</text>
+  <text x="528" y="590" class="s">~/easteregged/host</text>
+  <rect x="508" y="642" width="292" height="140" rx="12" class="box"/>
+  <text x="528" y="676" class="b">presence.py</text>
+  <text x="528" y="706" class="t">HC-SR04 via gpiozero</text>
+  <text x="528" y="734" class="t">publishes MQTT → mosquitto</text>
+  <text x="528" y="764" class="s">5 readings / s</text>
+
+  <!-- docker zone -->
+  <rect x="850" y="276" width="342" height="530" rx="16" class="zone"/>
+  <text x="870" y="302" class="cap">DOCKER · COMPOSE ~/ha</text>
+  <rect x="870" y="318" width="302" height="100" rx="12" class="box"/>
+  <text x="890" y="352" class="b">homeassistant</text>
+  <text x="890" y="380" class="t">:8123 · device platform</text>
+  <text x="890" y="404" class="s">MQTT integration · 19 room entities</text>
+  <rect x="870" y="434" width="302" height="100" rx="12" class="box"/>
+  <text x="890" y="468" class="b">music-assistant</text>
+  <text x="890" y="496" class="t">:8095 · Sendspin server</text>
+  <text x="890" y="520" class="s">plays the room stream</text>
+  <rect x="870" y="550" width="302" height="100" rx="12" class="box"/>
+  <text x="890" y="584" class="b">mosquitto</text>
+  <text x="890" y="612" class="t">:1883 · MQTT broker</text>
+  <text x="890" y="636" class="s">the room's message bus</text>
+  <rect x="870" y="666" width="302" height="116" rx="12" class="box"/>
+  <text x="890" y="700" class="b">esphome</text>
+  <text x="890" y="728" class="t">:6052 · builder · OTA</text>
+  <text x="890" y="752" class="s">configs for the ESP subnodes</text>
+
+  <!-- inside the Pi -->
+  <path d="M800 368 H868" class="ln" marker-end="url(#a)"/>
+  <rect x="802" y="341" width="64" height="22" rx="11" class="pill"/><text x="834" y="357" text-anchor="middle" class="pt">REST</text>
+  <path d="M800 484 H868" class="lnG" marker-end="url(#aG)"/>
+  <rect x="802" y="457" width="64" height="22" rx="11" class="pill"/><text x="834" y="473" text-anchor="middle" class="pt">HTTP</text>
+  <path d="M800 600 H868" class="ln" marker-start="url(#a)" marker-end="url(#a)"/>
+  <rect x="802" y="573" width="64" height="22" rx="11" class="pill"/><text x="834" y="589" text-anchor="middle" class="pt">MQTT</text>
+  <path d="M1172 376 H1190 V466 H1174" class="ln" marker-start="url(#a)" marker-end="url(#a)"/>
+  <rect x="1158" y="409" width="44" height="22" rx="11" class="pill"/><text x="1180" y="425" text-anchor="middle" class="pt">WS</text>
+
+  <!-- ========================= light subnodes ========================= -->
+  <text x="1300" y="188" class="cap">LIGHT SUBNODES · WI-FI</text>
+  <rect x="1300" y="202" width="440" height="96" rx="16" class="tile" stroke="#E37156"/>
+  <text x="1324" y="240" class="b">Table strip</text>
+  <text x="1324" y="270" class="t">ESP8266 · WLED · .169</text>
+  <rect x="1666" y="222" width="50" height="20" rx="5" fill="#E37156"/><text x="1691" y="236" text-anchor="middle" class="tag" fill="#171310">TOP</text>
+  <rect x="1300" y="312" width="440" height="96" rx="16" class="tile" stroke="#76DBD8"/>
+  <text x="1324" y="350" class="b">Wall strip</text>
+  <text x="1324" y="380" class="t">ESP32 · WLED · .170</text>
+  <rect x="1642" y="332" width="74" height="20" rx="5" fill="#76DBD8"/><text x="1679" y="346" text-anchor="middle" class="tag" fill="#171310">MIDDLE</text>
+  <rect x="1300" y="422" width="440" height="72" rx="16" class="next"/>
+  <text x="1324" y="455" class="b">Gledopto GL-C-015WL</text>
+  <text x="1324" y="480" class="t">WLED · will take over the wall strip</text>
+
+  <!-- DDP route: light engine → over the top → lights -->
+  <path d="M760 318 V248 H1260" class="lnG"/>
+  <path d="M1260 250 H1298" class="lnT" marker-end="url(#aL)"/>
+  <path d="M1260 248 V360 H1298" class="lnM" marker-end="url(#aM)"/>
+  <path d="M1260 360 V458 H1298" class="lnM dash" marker-end="url(#aM)"/>
+  <rect x="980" y="236" width="150" height="24" rx="12" class="pill" stroke="#F2EAE3"/><text x="1055" y="253" text-anchor="middle" class="pt">DDP · UDP 4048</text>
+
+  <!-- ========================= ESP / audio subnodes (planned) ========================= -->
+  <text x="1300" y="536" class="cap">ESP SUBNODES · PLANNED</text>
+  <rect x="1300" y="550" width="440" height="84" rx="16" class="next"/>
+  <text x="1324" y="586" class="b">Sendspin speakers</text>
+  <text x="1324" y="612" class="t">ESP32-S3 + MAX98357A · ESPHome</text>
+  <rect x="1300" y="650" width="440" height="84" rx="16" class="next"/>
+  <text x="1324" y="686" class="b">Radar LD2450</text>
+  <text x="1324" y="712" class="t">ESP32 · ESPHome · who + where</text>
+
+  <path d="M1172 484 H1276 V592 H1298" class="lnG dash" marker-end="url(#aG)"/>
+  <rect x="1190" y="472" width="78" height="22" rx="11" class="pill"/><text x="1229" y="488" text-anchor="middle" class="ptD">Sendspin</text>
+  <path d="M1298 692 H1250 V600 H1174" class="lnD" marker-end="url(#aD)"/>
+  <rect x="1190" y="588" width="58" height="22" rx="11" class="pill"/><text x="1219" y="604" text-anchor="middle" class="ptD">MQTT</text>
+  <path d="M1172 724 H1298" class="lnD" marker-end="url(#aD)"/>
+  <rect x="1190" y="712" width="96" height="22" rx="11" class="pill"/><text x="1238" y="728" text-anchor="middle" class="ptD">API · OTA</text>
+
+  <!-- ========================= attached hardware ========================= -->
+  <text x="488" y="1022" class="cap">ATTACHED TO THE PI · USB · GPIO · BLUETOOTH</text>
+  <rect x="488" y="898" width="166" height="96" rx="14" class="tile" stroke="#E37156"/>
+  <text x="508" y="934" class="b">USB speaker</text>
+  <rect x="508" y="950" width="42" height="18" rx="5" fill="#E37156"/><text x="529" y="963" text-anchor="middle" class="tag" fill="#171310">TOP</text>
+  <rect x="670" y="898" width="150" height="96" rx="14" class="tile"/>
+  <text x="690" y="934" class="b">USB mic</text>
+  <text x="690" y="962" class="s">jam input</text>
+  <rect x="852" y="898" width="166" height="96" rx="14" class="tile"/>
+  <text x="872" y="934" class="b">HC-SR04</text>
+  <text x="872" y="962" class="s">ultrasonic · 5 V</text>
+  <rect x="1034" y="898" width="186" height="96" rx="14" class="next"/>
+  <text x="1054" y="934" class="b">JBL speaker</text>
+  <text x="1054" y="962" class="s">room sound</text>
+
+  <path d="M571 896 V842" class="lnT" marker-start="url(#aL)"/>
+  <rect x="580" y="856" width="48" height="22" rx="11" class="pill"/><text x="604" y="872" text-anchor="middle" class="pt">USB</text>
+  <path d="M745 842 V896" class="lnT" marker-start="url(#aL)"/>
+  <rect x="754" y="856" width="48" height="22" rx="11" class="pill"/><text x="778" y="872" text-anchor="middle" class="pt">USB</text>
+  <path d="M935 842 V896" class="ln" marker-start="url(#a)" marker-end="url(#a)"/>
+  <rect x="944" y="856" width="74" height="22" rx="11" class="pill"/><text x="981" y="872" text-anchor="middle" class="pt">GPIO 23/24</text>
+  <path d="M1127 896 V842" class="lnG dash" marker-start="url(#aG)"/>
+  <rect x="1136" y="856" width="84" height="22" rx="11" class="pill"/><text x="1178" y="872" text-anchor="middle" class="ptD">Bluetooth</text>
+
+  <!-- ========================= legend ========================= -->
+  <rect x="60" y="410" width="320" height="584" rx="20" class="tile"/>
+  <text x="86" y="448" class="b">Protocols</text>
+  <g>
+    <rect x="86" y="468" width="132" height="22" rx="11" class="pill"/><text x="152" y="484" text-anchor="middle" class="pt">DDP · UDP 4048</text>
+    <text x="86" y="512" class="s">light frames to WLED, 40 per second</text>
+    <rect x="86" y="528" width="90" height="22" rx="11" class="pill"/><text x="131" y="544" text-anchor="middle" class="pt">MQTT 1883</text>
+    <text x="86" y="572" class="s">events, state, commands, HA discovery</text>
+    <rect x="86" y="588" width="58" height="22" rx="11" class="pill"/><text x="115" y="604" text-anchor="middle" class="pt">REST</text>
+    <text x="86" y="632" class="s">host → Home Assistant (token)</text>
+    <rect x="86" y="648" width="58" height="22" rx="11" class="pill"/><text x="115" y="664" text-anchor="middle" class="pt">HTTP</text>
+    <text x="86" y="692" class="s">web pages · room stream · WLED status</text>
+    <rect x="86" y="708" width="120" height="22" rx="11" class="pill"/><text x="146" y="724" text-anchor="middle" class="pt">WS · WebSocket</text>
+    <text x="86" y="752" class="s">Home Assistant ↔ Music Assistant</text>
+    <rect x="86" y="768" width="78" height="22" rx="11" class="pill"/><text x="125" y="784" text-anchor="middle" class="ptD">Sendspin</text>
+    <text x="86" y="812" class="s">synced audio to speakers (planned)</text>
+    <rect x="86" y="828" width="96" height="22" rx="11" class="pill"/><text x="134" y="844" text-anchor="middle" class="ptD">API · OTA</text>
+    <text x="86" y="872" class="s">ESPHome config + updates (planned)</text>
+    <text x="86" y="912" class="b">Levels</text>
+    <rect x="86" y="928" width="42" height="18" rx="5" fill="#E37156"/><text x="107" y="941" text-anchor="middle" class="tag" fill="#171310">TOP</text>
+    <rect x="136" y="928" width="66" height="18" rx="5" fill="#76DBD8"/><text x="169" y="941" text-anchor="middle" class="tag" fill="#171310">MIDDLE</text>
+    <rect x="210" y="928" width="70" height="18" rx="5" fill="#F2EAE3"/><text x="245" y="941" text-anchor="middle" class="tag" fill="#171310">GROUND</text>
+    <text x="86" y="968" class="s">line colour = the level it carries</text>
+    <text x="86" y="986" class="s">grey = infrastructure · white = all / room</text>
+  </g>
+
+  <text x="1740" y="1046" text-anchor="end" class="s">Prototype/Demo/Plan/System_Diagram.svg · details in Setup_Log/Setup_Reference.md</text>
+</svg>
