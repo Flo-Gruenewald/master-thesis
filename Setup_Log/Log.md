@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — Day curve: soft pre-sleep hill, one colour for pre-/post-sleep
+- The comfy (pre-sleep) light is drawn as a soft hill with a vertical gradient (orange `#E37156` → dark rust, like the blue morning's teal gradient), no longer as a block, and nothing where it is 0 (the thin orange strip along the whole day is gone). Softer edges in the model too (`Room.comfy`: in over 1.5 h from dusk −45 min, out over the last 1 h before bed). Label back to "pre-sleep"; post-sleep band, label and legend in the same rust as pre-sleep. Cache `v=71`. Checked on the home page.
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — Comfy light (booklet p. 49) in the room model; S3 photo
 - The booklet's orange evening block ("comfy light", dusk → bed, the bracket to the morning blue) is now in the day model: `Room.comfy(h, season)` (strength winter 0.9, autumn 0.75, spring 0.6 as on p. 50, summer 0.4; on from dusk −15 min, off 15 min before bed), a 4th value in `Room.curve()`. The day curve on the home page / S2 draws it as an orange block (label "comfy light"). In the room it is only a hint (Flo: mainly for the visualisation): + 0.25 × comfy of `#E37156` on the table glow in the room program (`Light.comfy`). Live: autumn table 12:00 (143,36,2) vs 20:30 (140,58,30) at the earlier 0.45; now softer. Tests 16 passed. Cache `v=70`.
 - S3 photo: `03_Design-Booklet/Images/Prototype Photos/rome-scenario-3.jpg` copied to `host/web/s3_photo.jpg` (local only, .gitignore).

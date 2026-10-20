@@ -254,6 +254,7 @@ $("now-btn").onclick = () => cmd("now");
 // ---- circadian curve
 const CW = 960, CH = 260;
 // the circadian day (home page and S2): the curve, night/pre-sleep/post-sleep bands, blue morning; p = id prefix
+const maxComfy = (v) => Math.min(1, v / 0.9);          // the comfy hill's height (winter = full)
 function curveMarkup(r, X, Y, p) {
   const n = r.curve.length, sleep = r.sleep_h || 22.5, wake = r.dawn_h;
   const pts = r.curve.map((c, i) => [X((24 * i) / n), Y(c[0])]);
@@ -261,21 +262,23 @@ function curveMarkup(r, X, Y, p) {
   const line = pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
   const bpts = r.curve.map((c, i) => [X((24 * i) / n), Y(c[0] * (c[2] || 0))]);
   const blue = `M0 ${CH} ` + bpts.map((q) => `L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(" ") + ` L${CW} ${CH} Z`;
-  const cpts = r.curve.map((c, i) => [X((24 * i) / n), Y(Math.max(c[0], 0.12) * (c[3] || 0) * 1.6)]);   // comfy light
+  // the comfy (pre-sleep) light: a soft orange hill, like the blue morning; nothing where it is 0 (no strip along the day)
+  const cpts = r.curve.map((c, i) => [X((24 * i) / n), (c[3] || 0) > 0.005 ? Y(0.45 * maxComfy(c[3])) : CH]);
   const comfy = `M0 ${CH} ` + cpts.map((q) => `L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(" ") + ` L${CW} ${CH} Z`;
   const stops = r.curve.filter((_, i) => i % 2 === 0).map((c, i, a) => `<stop offset="${(i / (a.length - 1)).toFixed(3)}" stop-color="${rgbStr(roomColour(c[1], c[2] || 0))}"/>`).join("");
   return `<defs><linearGradient id="${p}kg" x1="0" x2="1">${stops}</linearGradient>
       <linearGradient id="${p}fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
       <mask id="${p}fm"><rect width="${CW}" height="${CH}" fill="url(#${p}fade)"/></mask>
-      <linearGradient id="${p}bg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${C.middle}" stop-opacity=".75"/><stop offset="1" stop-color="${C.tealD}" stop-opacity=".35"/></linearGradient></defs>
+      <linearGradient id="${p}bg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${C.middle}" stop-opacity=".75"/><stop offset="1" stop-color="${C.tealD}" stop-opacity=".35"/></linearGradient>
+      <linearGradient id="${p}cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${C.top}" stop-opacity=".75"/><stop offset="1" stop-color="${C.rustD}" stop-opacity=".35"/></linearGradient></defs>
       <rect x="0" width="${X(wake - 0.5)}" height="${CH}" fill="#000" opacity=".22"/>
       <rect x="${X(sleep)}" width="${CW - X(sleep)}" height="${CH}" fill="#000" opacity=".22"/>
       <rect x="${X(sleep - 3)}" width="${X(3)}" height="${CH}" fill="${C.rust}" opacity=".16"/>
-      <rect x="${X(wake)}" width="${X(1)}" height="${CH}" fill="${C.peach}" opacity=".09"/>
+      <rect x="${X(wake)}" width="${X(1)}" height="${CH}" fill="${C.rust}" opacity=".16"/>
       ${[6, 12, 18].map((h) => `<line x1="${X(h)}" x2="${X(h)}" y1="0" y2="${CH}" stroke="${C.border}" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join("")}
       <path d="${line} L${CW} ${CH} L0 ${CH} Z" fill="url(#${p}kg)" opacity=".26" mask="url(#${p}fm)"/>
       <path d="${blue}" fill="url(#${p}bg)"/>
-      <path d="${comfy}" fill="${C.rust}" opacity=".75"/>
+      <path d="${comfy}" fill="url(#${p}cg)"/>
       <path d="${line}" fill="none" stroke="url(#${p}kg)" stroke-width="3" vector-effect="non-scaling-stroke"/>
       <line id="${p}real-mk" y1="0" y2="${CH}" stroke="${C.text3}" stroke-dasharray="4 5" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
       <line id="${p}room-mk" y1="0" y2="${CH}" stroke="${C.ground}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
@@ -288,7 +291,7 @@ function curveLabels(r) {
   const pct = (h) => `${((h / 24) * 100).toFixed(2)}%`;
   const labels = [
     [Math.max(1.6, (wake - 0.5) / 2), "night", ""], ...(24 - sleep > 2.5 ? [[(sleep + 24) / 2, "night", ""]] : []),
-    [sleep - 1.5, "comfy light", "w"], [wake + 0.5, "post-sleep", "p"],
+    [sleep - 1.5, "pre-sleep", "w"], [wake + 0.5, "post-sleep", "w"],
     ...(bl.length ? [[Math.max(wake + 3.2, (bl[0][0] + bl[bl.length - 1][0]) / 2), "blue morning", "b"]] : []),
     [wake, `dawn ${fmtH(wake)}`, "mk"], [r.dusk_h, `dusk ${fmtH(r.dusk_h)}`, "mk"],
   ];

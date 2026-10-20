@@ -121,7 +121,7 @@ main { padding: 16px 22px 18px; min-width: 0; min-height: 0; display: flex; flex
 .legend i { width: 12px; height: 7px; border-radius: 3px; display: inline-block; }
 .lg-line { background: linear-gradient(90deg, var(--rust-d), var(--top), var(--peach), var(--ground), var(--middle)); height: 3px !important; }
 .lg-blue { background: linear-gradient(180deg, var(--middle), var(--teal-d)); }
-.lg-post { background: rgba(242, 173, 157, .35); }
+.lg-post { background: rgba(161, 69, 48, .55); }
 .lg-warm { background: rgba(161, 69, 48, .55); }
 .curve-wrap { position: relative; flex: 1; min-height: 0; }
 #curve { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: ew-resize; touch-action: none; }

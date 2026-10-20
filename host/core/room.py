@@ -261,7 +261,7 @@ class Room:
         name = season or self.season
         s = self.seasons[name]
         dusk, sleep = s["dusk_h"], self.sleep_h
-        on = smoothstep((h - (dusk - 0.25)) / 0.75) * (1 - smoothstep((h - (sleep - 0.25)) / 0.5))
+        on = smoothstep((h - (dusk - 0.75)) / 1.5) * (1 - smoothstep((h - (sleep - 1.0)) / 1.0))   # soft edges
         return float(s.get("comfy", self.COMFY.get(name, 0.6))) * on
 
     def day_light(self, h):
