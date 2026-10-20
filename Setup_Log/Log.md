@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard keeps its Wi-Fi, named "postcard"
+- The card joined FLO-WORK via the portal (seen as 192.168.137.43) but forgot it after a restart ("No wifi saved"). Now the portal's choice is also kept in the chip's own storage (`Preferences`, namespace "postcard"; nothing in code or git) and tried first at every start (8 s), then the portal only if that fails. Hostname "postcard" (Windows hotspot list). Flashed; Flo enters FLO-WORK once more in "postcard-setup".
+- **Undo:** `git revert` this commit and flash.
+
 ## 21.10.2026 — Postcard: sensitive press detection (strip with 10 kΩ)
 - The rebuilt card's strip only rises a little when pressed (rest ~700, pressed ~900–2200, noise ±100), the old rule needed a jump to ~2300. Now: smoothed reading (EMA 0.1 ≈ 0.2 s), held when > resting mean + 80, released below + 40; the rest follows quickly downwards (a press during start-up can't spoil the calibration) and slowly upwards. Motors on GPIO6 (Flo found a workaround for the transistor). Checked over serial: press 1.4 s → release 3.0 → press 4.2 → release 8.2 → held 9–24 s at full heartbeat (130 bpm).
 - Wi-Fi still to be saved by Flo in the "postcard-setup" portal (FLO-WORK); only then does a press reach the host (S3 photo).

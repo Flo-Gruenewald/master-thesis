@@ -14,6 +14,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>                // no password in the code: first start opens "postcard-setup", pick FLO-WORK there
 #include <PubSubClient.h>
+#include <Preferences.h>               // 21.10: the Wi-Fi chosen in the portal is kept here (on the chip, not in code)
 
 // Wi-Fi + MQTT (v4): the card reports holding to the room host; the host says when a postcard arrives.
 static const char *BROKER = "192.168.137.1";
@@ -45,6 +46,15 @@ uint32_t lastBeat = 0, lastLog = 0, lastTick = 0;
 int rMin = 4095, rMax = 0, rN = 0;      // readings of the current 100 ms log window
 long rSum = 0;
 WiFiManager wm;
+Preferences prefs;
+
+void saveWifi() {                       // called by the portal after "Save": keep the network for every later start
+  prefs.begin("postcard", false);
+  prefs.putString("ssid", wm.getWiFiSSID());
+  prefs.putString("pass", wm.getWiFiPass());
+  prefs.end();
+  Serial.println("wifi saved for the next starts");
+}
 WiFiClient net;
 PubSubClient mqtt(net);
 uint32_t lastMqttTry = 0, lastPub = 0, wakeAt = 0;
@@ -92,9 +102,20 @@ void setup() {
   Serial.printf("postcard v3 ready, resting value %.0f\n", base);
   for (int i = 0; i < 2; i++) { analogWrite(PIN_MOTOR, 255); delay(250); analogWrite(PIN_MOTOR, 0); delay(250); }
   WiFi.mode(WIFI_STA);
+  WiFi.setHostname("postcard");         // shows as "postcard" in the hotspot's device list
+  prefs.begin("postcard", true);
+  String ssid = prefs.getString("ssid", ""), pass = prefs.getString("pass", "");
+  prefs.end();
+  if (ssid.length()) {                  // a network from an earlier portal: try it first (8 s)
+    WiFi.begin(ssid.c_str(), pass.c_str());
+    for (int i = 0; i < 80 && WiFi.status() != WL_CONNECTED; i++) delay(100);
+    Serial.printf("wifi %s: %s\n", ssid.c_str(), WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString().c_str() : "not reached");
+  }
   wm.setConfigPortalBlocking(false);    // the heartbeat keeps running while the setup portal is open
   wm.setConfigPortalTimeout(0);
-  if (!wm.autoConnect("postcard-setup")) Serial.println("no saved Wi-Fi: join 'postcard-setup' and choose FLO-WORK");
+  wm.setSaveConfigCallback(saveWifi);
+  if (WiFi.status() != WL_CONNECTED && !wm.autoConnect("postcard-setup"))
+    Serial.println("no saved Wi-Fi: join 'postcard-setup' and choose FLO-WORK");
   mqtt.setServer(BROKER, 1883);
   mqtt.setCallback(onMqtt);
   lastTick = millis();
