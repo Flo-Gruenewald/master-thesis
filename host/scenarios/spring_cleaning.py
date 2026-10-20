@@ -37,10 +37,12 @@ EVENING_H = 18.5       # 20.10.2026: S2 is always shown at 18:30: winter is alre
 # The table (MIDDLE) glows in the season's warm base colour and pulses with its sounds: base colour, pulse colour, then
 # (sound, seconds between pulses, strength) for the beds that make it pulse; the calls (frog, bird call …) pulse too.
 # Winter: an orange ember that flickers towards red with the fire (a soft gradient, never towards white).
-PULSE = {"winter": ("#E0602A", "#A8200F", [("fire", (0.12, 0.45), 0.55)]),
-         "spring": ("#F2B04A", "#F2B04A", [("birds", (1.2, 3.0), 0.45)]),
-         "summer": ("#F5D06A", "#F5D06A", [("crickets", (0.7, 1.1), 0.35)]),
-         "autumn": ("#C07A30", "#C07A30", [("wind", (2.5, 5.0), 0.40)])}                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
+# Colours: the Mars Rust design system ([colors] in room.toml): warm #E37156, peach #F2AD9D, rust #A14530, dawn #783526.
+PULSE = {"winter": ("warm", "dawn", [("fire", (0.08, 0.3), 0.8)]),
+         "spring": ("warm", "peach", [("birds", (0.6, 1.8), 0.7)]),
+         "summer": ("peach", "warm", [("crickets", (0.35, 0.7), 0.6)]),
+         "autumn": ("rust", "dawn", [("wind", (1.5, 3.5), 0.7)])}
+SENSED_GAP_S = 10.0    # a sensed pass at most every 10 s: a flapping radar (unit offline) must not skip phases                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
 # Where S2 sits in the mission (booklet p. 36, data: 00_Bots/Documentation/Tools/build_mission_timeline.py):
 # the 2nd vulnerability window (days 345–534, way home), habitat winter 425–470 → spring 470–510 → summer 510–548.
 # The scenario sets the host's room date to these mission days, so the whole room shows one time.
@@ -137,6 +139,7 @@ class Scenario(Base):
         self.staged = None                               # None = radars; "here" = "Someone passes" holds the light
         self.force_empty = False                         # "No one there": ignore the radar until it has been empty once
         self.armed = False                               # "No one there": the next person seen = next phase
+        self.last_sensed = -1e9                          # the last sensed pass (SENSED_GAP_S)
         next_call = {k: time.monotonic() + 4.0 for k in CALLS}
         self._to_day(STAGE_DAY["winter"], force=True)            # every demo starts at the window's winter
         self.host.room.set_hour(EVENING_H)                       # … in the evening
@@ -164,19 +167,20 @@ class Scenario(Base):
                 await self._simulate()
             self._mix(fade=0.6)
             season = STAGES[self.stage][1]
-            base_col, col, beds = PULSE.get(season, ("#E37156", "#E37156", []))
-            self.light.middle_tint = hex_rgb(base_col)
+            base_key, pulse_key, beds = PULSE.get(season, ("warm", "warm", []))
+            col = self.color(pulse_key)
+            self.light.middle_tint = self.color(base_key)
             for name, gap, amp in beds:                 # the table flickers / pulses with the season's sound
                 if (self.near > 0.2 and self.sounds.get(name, True) and name in STAGES[self.stage][4]
                         and now >= next_pulse.get(name, 0.0)):
                     a = amp * self.near * random.uniform(0.6, 1.0)
-                    self.light.accent(hex_rgb(col), a, seconds=max(0.25, gap[0] * 2), mode="tint", name=name)
+                    self.light.accent(col, a, seconds=max(0.3, gap[1] * 1.2), mode="tint", name=name)
                     next_pulse[name] = now + random.uniform(*gap)
             for k, (rel, gain, gap) in CALLS.items():   # the season's accents, now and then
                 if CALL_SEASON[k] == STAGES[self.stage][1] and now >= next_call[k] and self.sounds[k]:
                     if self.near > 0.2:                     # accents only while someone is near
                         self.audio.ambient_shot(self.sound(rel), gain * self.near)
-                        self.light.accent(hex_rgb(PULSE[CALL_SEASON[k]][1]), 0.7 * self.near, seconds=1.4, name="call")
+                        self.light.accent(self.color(PULSE[CALL_SEASON[k]][1]), 0.95 * self.near, seconds=2.2, name="call")
                     next_call[k] = now + random.uniform(*gap)
         t_end = time.monotonic() + END_HOLD_S           # summer: stay a while, then hand back to the room
         while time.monotonic() < t_end:
@@ -232,7 +236,9 @@ class Scenario(Base):
             return passed
         if not staged and (getattr(self, "armed", False)
                            or (self.empty_since is not None and now - self.empty_since >= EMPTY_S)):
-            passed = True                               # someone comes by after a quiet while: next phase
+            if getattr(self, "armed", False) or now - getattr(self, "last_sensed", -1e9) >= SENSED_GAP_S:
+                passed = True                           # someone comes by after a quiet while: next phase
+                self.last_sensed = now
             self.armed = False
         self.empty_since = None
         self.trail = [q for q in self.trail if now - q[0] < LINGER_S] + [(now, p["x"], p["y"])]

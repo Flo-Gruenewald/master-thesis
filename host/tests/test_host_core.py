@@ -418,4 +418,8 @@ def test_spring_staged_and_two_second_empty():
     s.host.people = []
     assert s._watch(t + 7.0) is False and not s.force_empty   # radar clear
     s.host.people = [{"x": 0, "y": 900, "d": 900}]
-    assert s._watch(t + 8.0) is True                  # the next real person = next phase
+    assert s._watch(t + 8.0) is True                  # the next real person = next phase (armed)
+    s.host.people = []
+    s._watch(t + 9.0); s._watch(t + 11.5)            # a flapping radar: gone > 2 s …
+    s.host.people = [{"x": 0, "y": 900, "d": 900}]
+    assert s._watch(t + 12.0) is False                # … but < 10 s since the last sensed pass: no skip

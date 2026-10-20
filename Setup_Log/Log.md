@@ -2,6 +2,13 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2: Mars Rust colours, more reactive table, no skipped phases
+- Colours from the design system (`[colors]`): base → pulse: winter warm `#E37156` → dawn `#783526` (fire), spring warm → peach `#F2AD9D` (birds), summer peach → warm (crickets), autumn rust `#A14530` → dawn (wind).
+- More reactive: shorter gaps (fire 0.08–0.3 s, birds 0.6–1.8, crickets 0.35–0.7, wind 1.5–3.5), stronger pulses (0.6–0.8), calls 0.95 for 2.2 s.
+- Bug: with the spotlight unit offline its radar flapped (seen / gone > 2 s / seen …) and every reappearance counted as a pass → phases skipped. Now a sensed pass happens at most every 10 s (`SENSED_GAP_S`); "No one there" (armed) and the buttons are not limited. Test extended (flapping radar → no skip), 16 passed.
+- Live: summer table rgb ~(204,113,93)–(225,113,87), crickets 77 pulses / 6 s; autumn ~(110,48,34)–(136,60,42), wind 74.
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — S2 winter: louder fire, table flickers orange → red
 - Flo: the fire was too quiet and the flicker went white → orange. Now the fire bed is 0.50 (was 0.22; winter wind 0.10), and the table gets the season's base colour (`light.middle_tint`, new in `core/light.py`, cleared by `release()`): winter an orange ember `#E0602A`, the flicker tints towards red `#A8200F` (strength 0.55); spring/summer/autumn their warm colour as base too. No glow floor: nobody near = table off. `PULSE` = (base, pulse colour, beds).
 - Tests 16 passed; checked: table off in winter with nobody near. The flicker itself still to be seen at the table (Flo).
