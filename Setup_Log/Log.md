@@ -3,6 +3,7 @@
 Every change with undo steps. Newest first.
 
 ## 21.10.2026 — Postcard keeps its Wi-Fi, named "postcard"
+- 21.10 later: confirmed online — 192.168.137.43 answers ping, and with the host running presses arrive as `in/postcard/touch {"held":1,"i":1.00}`.
 - The card joined FLO-WORK via the portal (seen as 192.168.137.43) but forgot it after a restart ("No wifi saved"). Now the portal's choice is also kept in the chip's own storage (`Preferences`, namespace "postcard"; nothing in code or git) and tried first at every start (8 s), then the portal only if that fails. Hostname "postcard" (Windows hotspot list). Flashed; Flo enters FLO-WORK once more in "postcard-setup".
 - **Undo:** `git revert` this commit and flash.
 
