@@ -14,3 +14,4 @@
   - `swallows.mp3`: "Birdsong swallow loop" by HenKonen — https://freesound.org/s/797661/
   - `vespa.mp3`: "Vespa Driving" by derjuli — https://freesound.org/s/448130/
 - `s2/frog.mp3`, `s2/winter_wind.mp3`, `s2/birds.mp3`, `s2/rain.mp3`, `s2/bees.mp3` (S2 spring sounds), added by Flo 16.10.2026; original names (Pixabay sound effects): `dragon-studio-frog-croaking-sound-effect-322956`, `dragon-studio-winter-wind-402331`, `freesound_community-birds-chirping-ambiance-26052`, `liecio-light-rain-109591`, `scottishperson-sound-effect-bees-buzzing-153375`.
+- `s2/fire.mp3` (20.10.2026, S2 winter fireplace): "Fire in the stove" by mcmikai — https://freesound.org/s/532191/ — **CC0**, HQ preview (MP3, 61 s).

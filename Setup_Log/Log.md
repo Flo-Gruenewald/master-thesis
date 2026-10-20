@@ -2,6 +2,19 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2 in the evening: seasonal pulse accents on the table, fireplace in winter
+- S2 always shows 18:30 (`EVENING_H`): set at the start and on every phase step (`_to_day`), so the seasons compare at the same hour (winter already dark, summer still golden).
+- Table accent (MIDDLE) pulses in the season's warm colour with its sounds (`PULSE`): winter red-orange `#E0502A` flickering with the new fireplace bed, spring yellow-orange `#F2B04A` with the birds, summer yellow `#F5D06A` with the crickets, autumn brown-orange `#C07A30` with the wind; every call (cat, frog, bird call, gust, shower) also pulses once. Only while someone is near (activation > 0.2), scaled by closeness; a toggled-off sound does not pulse.
+- Winter bed "Fireplace" (`s2/fire.mp3`, Freesound CC0 "Fire in the stove" by mcmikai, 532191, downloaded with Flo's OK); toggle on the winter card (page + iPad). Beds whose file is missing are skipped.
+- Checked live (staged): hour 18.5 in every season; pulses: spring calls, summer crickets 70/6 s, autumn wind 69/6 s. Winter fire not seen live (nobody at the table); file found, same logic. Tests 16 passed. Cache `v=67`.
+- **Undo:** `git revert` this commit; delete `Sounds/s2/fire.mp3`.
+
+## 20.10.2026 — Starship keychain (2× for the supervisor)
+- Source: MakerWorld "Starship – Ökosystem" (Spacerman-xx, CC BY-SA) in `Prints/starship/` (`front.3mf`, `shell.3mf`): a cutaway kit (open outer shell + interior parts), not usable directly at 60 mm. Rebuilt parametrically with its proportions: `Prints/scripts/make_starship_keychain.py` (H 60 mm, D 10.8, ogive nose 1.9 D, aft + forward flaps, ring at the tail, 2 Ø1.95 pin holes).
+- Two identical halves cut through the flap plane, lying on the cut face → no supports (only the pin-hole tops bridge, 6 mm²). Watertight, 1 body, 21 × 66 × 5.4 mm.
+- Files: `Prints/starship/starship_keychain_half.stl`, `starship_keychain_plate_x4.stl`, `README_keychain.md`.
+- **Undo:** delete those three files and the script.
+
 ## 20.10.2026 — S2 "No one there" helps the sensors (no lock)
 - Flo: "No one there" should tell the sensors that nobody is there, and the next real passer-by reactivates. Now: dark at once, the next phase is armed, targets the radar still sees are ignored until the radar has been empty once; the next person seen after that = next phase. The radars are no longer locked. "Someone passes" stays the manual fallback (full + next phase, held until "No one there"). Hint shows "· held" / "· waiting for the radar to clear". Cache `v=66`, test updated, 16 passed. Live: someone → spring·Beginning 0.97 held; no one there → 0.0, radar clear.
 - **Undo:** `git revert` this commit (back to the staged lock of `0c2ae53`).

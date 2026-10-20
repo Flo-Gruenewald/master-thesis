@@ -15,6 +15,7 @@ import time
 
 from core.audio import load_wav
 from core.room import cct_rgb
+from core.light import hex_rgb
 from core.scenario import Scenario as Base
 
 # 18.10.2026 (Flo): spring is the highlight with three phases (Beginning · Middle · End); winter, summer and autumn
@@ -22,7 +23,7 @@ from core.scenario import Scenario as Base
 # after nobody was seen for EMPTY_S, moves on one step.
 PHASES = {"spring": ["Beginning", "Middle", "End"]}
 STAGES = [   # stage, season (= the moment on the web page), light (colour temperature K, level), sounds {name: gain}
-    ("winter", "winter", 9000, 0.22, {"winter": 0.18}),
+    ("winter", "winter", 9000, 0.22, {"winter": 0.12, "fire": 0.22}),
     ("spring_begin", "spring", 6500, 0.30, {"winter": 0.04, "rain": 0.14}),
     ("spring_middle", "spring", 5000, 0.40, {"rain": 0.05, "birds": 0.20, "bees": 0.10}),
     ("spring_end", "spring", 4200, 0.52, {"birds": 0.26, "bees": 0.16, "song": 0.32}),
@@ -30,7 +31,15 @@ STAGES = [   # stage, season (= the moment on the web page), light (colour tempe
     ("autumn", "autumn", 4800, 0.38, {"wind": 0.16}),
 ]
 BEDS = {"winter": "s2/winter_wind", "rain": "s2/rain", "birds": "s2/birds", "bees": "s2/bees",
-        "crickets": "ground/crickets", "wind": "ground/wind"}                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
+        "crickets": "ground/crickets", "wind": "ground/wind",
+        "fire": "s2/fire"}                                 # fire: a fireplace recording (Freesound CC0), skipped if missing
+EVENING_H = 18.5       # 20.10.2026: S2 is always shown at 18:30: winter is already dark (fire), summer still golden
+# The table accent (MIDDLE) pulses with the season's sounds, in the season's warm colour: colour, then
+# (sound, seconds between pulses, strength) for the beds that make it pulse; the calls (frog, bird call …) pulse too.
+PULSE = {"winter": ("#E0502A", [("fire", (0.12, 0.45), 0.35)]),
+         "spring": ("#F2B04A", [("birds", (1.2, 3.0), 0.45)]),
+         "summer": ("#F5D06A", [("crickets", (0.7, 1.1), 0.35)]),
+         "autumn": ("#C07A30", [("wind", (2.5, 5.0), 0.40)])}                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
 # Where S2 sits in the mission (booklet p. 36, data: 00_Bots/Documentation/Tools/build_mission_timeline.py):
 # the 2nd vulnerability window (days 345–534, way home), habitat winter 425–470 → spring 470–510 → summer 510–548.
 # The scenario sets the host's room date to these mission days, so the whole room shows one time.
@@ -41,7 +50,7 @@ EMPTY_S = 2.0          # nobody seen this long → dark (~1 s), and the next per
 # moves one phase on. "Someone passes" is the manual fallback: full light + next phase, held until "No one there".
 
 SOUND_ROWS = [   # the tablet's switches: season, general (beds), accents (calls now and then, only in that season)
-    ("winter", ["winter"], ["gust"]),
+    ("winter", ["winter", "fire"], ["gust"]),
     ("spring", ["rain", "birds", "bees", "song"], ["cat", "frog"]),
     ("summer", ["crickets"], ["birdcall"]),
     ("autumn", ["wind"], ["shower"]),
@@ -129,6 +138,8 @@ class Scenario(Base):
         self.armed = False                               # "No one there": the next person seen = next phase
         next_call = {k: time.monotonic() + 4.0 for k in CALLS}
         self._to_day(STAGE_DAY["winter"], force=True)            # every demo starts at the window's winter
+        self.host.room.set_hour(EVENING_H)                       # … in the evening
+        next_pulse = {}
         self.moment(STAGES[0][1])
         self._mix(fade=4.0)
         while True:
@@ -151,10 +162,19 @@ class Scenario(Base):
                 self.flags.discard("skip")
                 await self._simulate()
             self._mix(fade=0.6)
+            season = STAGES[self.stage][1]
+            col, beds = PULSE.get(season, ("#E37156", []))
+            for name, gap, amp in beds:                 # the table flickers / pulses with the season's sound
+                if (self.near > 0.2 and self.sounds.get(name, True) and name in STAGES[self.stage][4]
+                        and now >= next_pulse.get(name, 0.0)):
+                    a = amp * self.near * random.uniform(0.6, 1.0)
+                    self.light.accent(hex_rgb(col), a, seconds=max(0.25, gap[0] * 2), mode="tint", name=name)
+                    next_pulse[name] = now + random.uniform(*gap)
             for k, (rel, gain, gap) in CALLS.items():   # the season's accents, now and then
                 if CALL_SEASON[k] == STAGES[self.stage][1] and now >= next_call[k] and self.sounds[k]:
                     if self.near > 0.2:                     # accents only while someone is near
                         self.audio.ambient_shot(self.sound(rel), gain * self.near)
+                        self.light.accent(hex_rgb(PULSE[CALL_SEASON[k]][0]), 0.7 * self.near, seconds=1.4, name="call")
                     next_call[k] = now + random.uniform(*gap)
         t_end = time.monotonic() + END_HOLD_S           # summer: stay a while, then hand back to the room
         while time.monotonic() < t_end:
@@ -180,9 +200,8 @@ class Scenario(Base):
         """Move the host's room date to this mission day (forward only, unless force); the hour stays."""
         room = self.host.room
         if force or room.mission_day() < day:
-            h = room.hour()
             room.set_date(day)
-            room.set_hour(h)
+            room.set_hour(EVENING_H)                    # always the same evening hour, so the seasons compare
 
     # ---- presence ------------------------------------------------------------------------
 
@@ -232,7 +251,7 @@ class Scenario(Base):
             gain = beds.get(name, 0.0) * boost if self.sounds.get(name, True) else 0.0
             v = self.voices.get(name)
             if v is None:
-                if gain <= 0:
+                if gain <= 0 or (name != "song" and not self.has_sound(BEDS[name])):
                     continue
                 v = self.voices[name] = self.bed(self._song() if name == "song" else BEDS[name], 0.0, fade=0.1,
                                                  where="table" if name == "rain" else "room")

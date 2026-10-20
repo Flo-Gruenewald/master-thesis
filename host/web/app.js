@@ -39,7 +39,7 @@ const STORY = {      // [mission day (booklet), story = the title, framing]
 };
 // what matters to try out in each scenario
 const SPRING_LABEL = { winter: "Winter wind", gust: "Wind gust", rain: "Rain", birds: "Birds", bees: "Bees", song: "Here Comes the Sun",
-  cat: "Cat", frog: "Frog", crickets: "Crickets", birdcall: "Bird call" , wind: "Autumn wind", shower: "Rain shower" };
+  cat: "Cat", frog: "Frog", crickets: "Crickets", birdcall: "Bird call" , wind: "Autumn wind", shower: "Rain shower", fire: "Fireplace" };
 // the season icons of our logo (same as clock.html)
 const SEASON_ICON = {
   spring: '<path d="M12 21v-8"/><path d="M12 13C12 9 9.5 6.5 5 6.5 5 11 8 13 12 13z"/><path d="M12 11c0-3.2 2.4-5.5 6.5-5.5 0 3.7-2.6 5.5-6.5 5.5z"/>',
