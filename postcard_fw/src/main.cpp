@@ -23,7 +23,10 @@ static const char *T_ARRIVED = "easteregged/postcard/arrived";  // → two short
 #ifndef PIN_FSR_GPIO
 #define PIN_FSR_GPIO 1          // C3 SuperMini: GPIO1; classic ESP32 DevKit (env esp32): GPIO34 (D34, ADC1)
 #endif
-static const int PIN_FSR = PIN_FSR_GPIO, PIN_MOTOR = 5;   // GPIO5 = "D5": both motors through one transistor
+#ifndef PIN_MOTOR_GPIO
+#define PIN_MOTOR_GPIO 6        // 21.10.2026: GPIO5 of the C3 died (motor wired straight to the pin) → GPIO6
+#endif
+static const int PIN_FSR = PIN_FSR_GPIO, PIN_MOTOR = PIN_MOTOR_GPIO;   // both motors through one transistor
 static const float HOLD_ON = 0.5, HOLD_OFF = 0.3;   // held above / released below this share of rest → top
 static const float HOLD_S = 4.0;        // seconds of holding to reach full strength
 static const float RELEASE_S = 1.5;     // seconds for the strength to fall back after letting go

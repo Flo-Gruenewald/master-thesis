@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard: motor moved to GPIO6 (GPIO5 dead)
+- No start buzz and 0 V on GPIO5: the pin most likely died while the motors were wired straight to it (battery + → motor → GPIO5). Motor output now GPIO6 (`PIN_MOTOR_GPIO`, default 6 for the C3; the DevKit env keeps D5). Flashed with Flo's OK; Flo moves the 1-kΩ base resistor from GPIO5 to GPIO6. Pressure strip still barely reacts (rest ~465, pressed ≤ ~640): loose contact suspected (3V3 / GPIO1 / 10 kΩ). Wi-Fi not saved yet (portal "postcard-setup").
+- **Undo:** set `PIN_MOTOR_GPIO 5` again and flash (only if GPIO5 works).
+
 ## 21.10.2026 — Postcard: new ESP32-C3 flashed (two motors on GPIO5)
 - Flo's postcard breadboard broke; rebuilt with two coin motors in parallel on GPIO5 (one PN2222, a diode per motor). The board on USB turned out to be an ESP32-C3 (MAC 88:56:a6:6d:0b:c4), not a DevKit → flashed the existing C3 firmware (`env c3`: strip GPIO1, motors GPIO5) from `C:\pc\postcard` with Flo's OK. Serial: "postcard ready, resting value 1403", heartbeat running (pwm 170, 60 bpm). No Wi-Fi saved yet → AP "postcard-setup" (192.168.4.1): Flo enters FLO-WORK there himself.
 - Also prepared (not flashed): `env esp32` for a classic ESP32 DevKit (strip D34, motors D5), commit `c2f98c0`.
