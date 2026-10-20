@@ -38,7 +38,7 @@ EVENING_H = 18.5       # 20.10.2026: S2 is always shown at 18:30: winter is alre
 # (sound, seconds between pulses, strength) for the beds that make it pulse; the calls (frog, bird call …) pulse too.
 # Winter: an orange ember that flickers towards red with the fire (a soft gradient, never towards white).
 # Colours: the Mars Rust design system ([colors] in room.toml): warm #E37156, peach #F2AD9D, rust #A14530, dawn #783526.
-PULSE = {"winter": ("warm", "dawn", [("fire", (0.08, 0.3), 0.8)]),
+PULSE = {"winter": ("warm", "rust", [("fire", (0.08, 0.3), 0.8)]),     # orange ember, flickers to full rust
          "spring": ("warm", "peach", [("birds", (0.04, 0.22), 0.9)]),   # sunrays through leaves: fast, varied
          "summer": ("peach", "warm", [("crickets", (0.05, 0.18), 0.9)]),  # chirp trains with pauses, varied
          "autumn": ("rust", "dawn", [("wind", (1.5, 3.5), 0.7)])}
@@ -140,6 +140,7 @@ class Scenario(Base):
         self.force_empty = False                         # "No one there": ignore the radar until it has been empty once
         self.armed = False                               # "No one there": the next person seen = next phase
         self.last_sensed = -1e9                          # the last sensed pass (SENSED_GAP_S)
+        self.dim, self.gust_until = 1.0, 0.0             # winter: a gust dims the fire glow
         next_call = {k: time.monotonic() + 4.0 for k in CALLS}
         self._to_day(STAGE_DAY["winter"], force=True)            # every demo starts at the window's winter
         self.host.room.set_hour(EVENING_H)                       # … in the evening
@@ -170,10 +171,12 @@ class Scenario(Base):
             self.host.room.season_shown = season          # the iPad clock + home page show S2's season
             base_key, pulse_key, beds = PULSE.get(season, ("warm", "warm", []))
             col = self.color(pulse_key)
-            self.light.middle_tint = self.color(base_key)
+            # winter: while a wind gust plays, the fire glow sinks and stops flickering, then comes back in full
+            self.dim += ((0.3 if now < self.gust_until else 1.0) - self.dim) * 0.06
+            self.light.middle_tint = self.color(base_key) * self.dim
             for name, gap, amp in beds:                 # the table flickers / pulses with the season's sound
                 if (self.near > 0.2 and self.sounds.get(name, True) and name in STAGES[self.stage][4]
-                        and now >= next_pulse.get(name, 0.0)):
+                        and now >= next_pulse.get(name, 0.0) and self.dim > 0.6):
                     a = amp * self.near * random.uniform(0.6, 1.0)
                     dur = max(0.3, gap[1] * 1.2)
                     if name == "birds":                     # sunrays: mostly quick glints, now and then a longer ray
@@ -191,7 +194,10 @@ class Scenario(Base):
                 if CALL_SEASON[k] == STAGES[self.stage][1] and now >= next_call[k] and self.sounds[k]:
                     if self.near > 0.2:                     # accents only while someone is near
                         self.audio.ambient_shot(self.sound(rel), gain * self.near)
-                        self.light.accent(self.color(PULSE[CALL_SEASON[k]][1]), 0.95 * self.near, seconds=2.2, name="call")
+                        if k == "gust":                     # the wind blows the fire down for a few seconds
+                            self.gust_until = now + 5.0
+                        else:
+                            self.light.accent(self.color(PULSE[CALL_SEASON[k]][1]), 0.95 * self.near, seconds=2.2, name="call")
                     next_call[k] = now + random.uniform(*gap)
         t_end = time.monotonic() + END_HOLD_S           # summer: stay a while, then hand back to the room
         while time.monotonic() < t_end:
@@ -277,7 +283,8 @@ class Scenario(Base):
             if abs(v.target - gain) > 1e-3:
                 v.ramp(gain, fade)
         self.light.ground(cct_rgb(k), min(1.0, level * act * (1.0 + 0.3 * self.linger)), fade=fade, breath=0.0)
-        self.light.spotlight(self.color("peach"), 0.7 * act * (0.6 + 0.4 * self.linger), width=0.5, fade=fade)
+        spot = "warm" if STAGES[self.stage][1] == "winter" else "peach"   # winter: an orange spotlight, like firelight
+        self.light.spotlight(self.color(spot), 0.7 * act * (0.6 + 0.4 * self.linger), width=0.5, fade=fade)
 
     def _song(self):
         """'Here Comes the Sun' if its file is there (wav or mp3), else the season's music."""

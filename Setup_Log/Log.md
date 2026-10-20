@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2 winter: orange spotlight, the wind blows the fire down
+- Winter: the spotlight is warm orange `#E37156` (other seasons peach). The table glows orange and flickers to full rust `#A14530` with the fire. When a wind gust plays, the table glow sinks to ~30 % and stops flickering for 5 s, then comes back in full (`dim`, `gust_until`; the gust no longer makes its own pulse).
+- Live: winter, fire 121 pulses / 15 s, spotlight (top level) (105,52,40) = the warm orange ratio. Gust dimming not caught live (gusts come every 8–14 s). Tests 16 passed.
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — S2: clock shows S2's season, spotlight keep-awake, sunray birds, chirping crickets
 - iPad clock + home page: while S2 runs, the room state shows S2's season and its curve (`room.season_shown`, set by S2, cleared in `Scenario.cleanup`); time 18:30 and the mission day were already S2's. Live: winter 18:30 day 445 → spring 474 → summer 528; after Stop the room program's season again.
 - Spotlight on the power bank: `keep_awake = 0.05` on the `top` unit: faint white on all 77 LEDs (~70 mA) in every frame the host sends, so the power bank does not switch off (`Wled.keep_awake`, `core/light.py`). Not active while the room is turned off or the host is stopped. The unit was not reachable during the test (spotlight-unit.local) — check its power.
