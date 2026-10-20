@@ -2,6 +2,15 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S1 always ends at 1:30
+- `scenarios/morning_jam.py`: the jam ends 1:30 after the start (`end_s = 90` in `[morning_jam]`, counted from the start incl. the 6-s wake, the same as the page's timer); the piano outro starts at once (no waiting for the loop end). The idle end (`idle_timeout_s`) and `max_minutes` are gone; Stop still ends it at once.
+- Checked live: wake 0 s → jam 6 s → outro 90.1 s (timer 90) → idle 97 s. Tests 15 passed.
+- **Undo:** `git revert` this commit (or set the old keys back: `idle_timeout_s = 45`, `max_minutes = 2`).
+
+## 19.10.2026 — Postcard lid: window skin 0.45 → 0.8 mm
+- Flo's friend saw holes in the printed (PETG) lid. STLs were watertight; the only thin wall was the 0.45 mm break-out skin (one line standing up → slicer gaps). `make_postcard_case.py`: `SKIN = 0.8` (two lines). All 4 variants re-exported (normal, M, PETG, M PETG), `postcard_m_petg.zip` rebuilt, README updated.
+- **Undo:** `SKIN = 0.45` and re-run the script with `""`, `--m`, `--petg`, `--m --petg`.
+
 ## 19.10.2026 — Prototype/Demo is now the git repo itself
 - `Prototype/Demo` = local clone of https://github.com/Flo-Gruenewald/master-thesis (branch `main`, remote `origin`); commit `8557b67` moved `demo/*` to the repo root. README + `.gitignore` now live in this folder (`.gitignore` also keeps out `*.otf`/`*.ttf`: a PP Pangaia font had appeared in `host/web/fonts/`). Git identity set in the repo (Flo-Gruenewald, noreply mail).
 - Workflow: after a tested change → `git status`, commit, `git push`; `git pull` before working (experiments from Claude Code on the web come as PRs). Noted in `00_Bots/Prototype/Prototype_Bot_Onboarding.md` (Rules). The export script → `00_Bots/Prototype/Tools/_Archive/`.

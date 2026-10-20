@@ -254,8 +254,7 @@ gain = 1.0
 row_threshold = 0.002          # RMS of a 20 ms window (start value; live: the mic line on the web page). 15.10: room/beat 0.001, taps 0.02–0.05
 row_gate = true                # keep only what was played in a row, silence the room in between
 wake_seconds = 6               # sunrise before the beat starts
-idle_timeout_s = 45            # nobody played for this long → the jam winds down
-max_minutes = 2                # the jam ends after this at the latest
+end_s = 90                     # 20.10.2026: the jam always ends 1:30 after the start (outro at once); no idle end any more
 host_layer_after = 3           # the host adds its shaker once there are this many rows
 
 [room_map]                     # S2 mini radar (web page): top view in mm, origin = the spotlight's radar, y = where it looks

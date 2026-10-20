@@ -5,8 +5,8 @@ jam     the beat runs and the table mic (table unit, [netmic]) is recorded loop 
         in it (a tap, a cup, humming, a word) becomes a row and comes back at the same place in every loop.
         Feedback: while you play, the spotlight brightens with your sound; a new row flashes the spotlight
         and the table edge; every row glows softly on the table when it comes round again.
-outro   Stop pressed (outro at once; a second Stop cuts it), or nobody played for a while or max_minutes →
-        piano outro at the loop end; light settles, rows fade
+outro   always 1:30 after the start (end_s, 20.10.2026: the same length in every demo) or when Stop is pressed:
+        piano outro at once (a second Stop cuts it); light settles, rows fade
 """
 import time
 
@@ -26,6 +26,7 @@ class Scenario(Base):
         rows = self.host.rows
         wake = float(c["wake_seconds"])
         self.ending = False
+        self.t_run = time.monotonic()                   # 1:30 counts from here (the web page's timer starts here too)
 
         self.moment("wake")
         li.ground(self.color("dawn"), 0.35, fade=wake * 0.6, breath=0.0)
@@ -55,7 +56,7 @@ class Scenario(Base):
         if rows is not None:
             rows.active = False
         self.host.keep_trace("jam", a.snapshot_layers())   # for Spring Cleaning's "Rewind?"
-        await self.sleep(0.0 if self.ending else a.seconds_to_loop_end())   # Stop: outro right away
+        await self.sleep(0.0)                                   # Stop or 1:30: the outro right away
         a.stop_beds(fade=1.0)
         a.oneshot("MJ_PianoOutro", gain=0.8)
         li.spotlight(self.color("peach"), 0.0, width=1.0, fade=4.0)
@@ -67,8 +68,7 @@ class Scenario(Base):
 
     def _should_end(self):
         c, now = self.cfg, time.monotonic()
-        return (self.ending or now - self.last_activity > c["idle_timeout_s"]
-                or now - self.started > c["max_minutes"] * 60)
+        return self.ending or now - self.t_run >= float(c.get("end_s", 90))
 
     def wind_down(self):
         if self.ending or self.host.moment not in ("wake", "jam"):
