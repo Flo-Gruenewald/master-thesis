@@ -74,7 +74,7 @@ function kRGB(k) {
 }
 const SIMS = {
   morning_jam: [["clear", "Clear rows"]],
-  spring_cleaning: [["pass", "Next phase"], ["season", "Next season"]],
+  spring_cleaning: [["someone", "Someone passes"], ["empty", "No one there"], ["pass", "Next phase"], ["season", "Next season"]],
   miss_you_sis: [["postcard", "Postcard from Earth"], ["hold", "Hold the card (on/off)"]],
 };
 
@@ -106,6 +106,8 @@ function sim(k) {
   else if (k === "pass") cmd("spring_pass");
   else if (k === "skip") cmd("spring_skip");
   else if (k === "season") cmd("spring_season");
+  else if (k === "someone") cmd("spring_someone");
+  else if (k === "empty") cmd("spring_empty");
   else if (k === "hold") cmd("postcard_hold");
 }
 
@@ -728,7 +730,7 @@ function seasonView(c, s) {        // Spring Cleaning: one card per season with 
   });
   v.passes = sp.passes;
   v.root.classList.toggle("sim", !!sp.sim);
-  v.hint.textContent = `${sp.hint || ""}${sp.sim ? " · days are passing …" : act > 0.7 ? "" : here ? " · come closer" : " · resting"}`;
+  v.hint.textContent = `${sp.hint || ""}${sp.sim ? " · days are passing …" : act > 0.7 ? "" : here ? " · come closer" : " · resting"}${sp.staged ? " · staged" : ""}`;
   v.day.textContent = `Mission day ${sp.mission_day}`;
   v.time.textContent = hh;
 }

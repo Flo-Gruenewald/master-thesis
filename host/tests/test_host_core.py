@@ -393,3 +393,24 @@ def test_radar_frozen_ghosts_near_zone_and_wall_fusion():
     ppl = host.people
     assert [(p["src"], p["n"]) for p in ppl] == [("spot", 1), ("wall", 12)]
     assert (ppl[1]["x"], ppl[1]["y"]) == (-595, 2080)
+
+
+def test_spring_staged_and_two_second_empty():
+    from scenarios import spring_cleaning as sc
+    s = sc.Scenario.__new__(sc.Scenario)
+    s.host = SimpleNamespace(people=[{"x": 0, "y": 900, "d": 900}])
+    s.flags, s.trail, s.linger, s.near, s.empty_since, s.staged = set(), [], 0.0, 0.8, None, None
+    t = 100.0
+    assert s._watch(t) is False                       # someone there: no pass
+    lit = s.near
+    s.host.people = []
+    s._watch(t + 1.0)
+    assert s.near == lit                              # 1 s empty: still lit (radar dropouts)
+    s._watch(t + 3.5)
+    assert s.near < lit                               # > 2 s empty: fading to dark
+    s.host.people = [{"x": 0, "y": 900, "d": 900}]
+    assert s._watch(t + 4.0) is True                  # the next person = next phase
+    s.command("spring_empty", None)
+    assert s._watch(t + 5.0) is False and s.near < lit   # staged empty ignores the radar
+    s.command("spring_someone", None)
+    assert s._watch(t + 6.0) is True                  # staged pass = next phase

@@ -35,7 +35,9 @@ BEDS = {"winter": "s2/winter_wind", "rain": "s2/rain", "birds": "s2/birds", "bee
 # the 2nd vulnerability window (days 345–534, way home), habitat winter 425–470 → spring 470–510 → summer 510–548.
 # The scenario sets the host's room date to these mission days, so the whole room shows one time.
 STAGE_DAY = {"winter": 445, "spring_begin": 474, "spring_middle": 488, "spring_end": 502, "summer": 528, "autumn": 555}
-EMPTY_S = 5.0          # nobody seen this long → the next person who comes by moves the season one phase on
+EMPTY_S = 2.0          # nobody seen this long → dark (~1 s), and the next person who comes by moves one phase on
+# Staging (20.10.2026, defence): "Someone passes" / "No one there" on the page put the run into staged mode: the radars
+# are ignored for the rest of the run, so the audience cannot interfere (Wizard of Oz).
 
 SOUND_ROWS = [   # the tablet's switches: season, general (beds), accents (calls now and then, only in that season)
     ("winter", ["winter"], ["gust"]),
@@ -91,7 +93,7 @@ class Scenario(Base):
                 "mission_day": room.mission_day(), "start_day": STAGE_DAY["winter"],
                 "ground": "#%02x%02x%02x" % tuple(int(min(255, v)) for v in g),
                 "spot": round(0.08 + 0.6 * getattr(self, "linger", 0.0), 2),
-                "layers": self._layers(), "season": season, "hint": self.stage_hints[stage],
+                "layers": self._layers(), "season": season, "hint": self.stage_hints[stage], "staged": bool(getattr(self, "staged", None)),
                 "passes": self.passes, "near": round(getattr(self, "near", 0.0), 2),
                 "linger": round(getattr(self, "linger", 0.0), 2), "curve": self._curve,
                 "h": round(room.hour(), 2), "sim": sim is not None, "day": room.mission_day(),
@@ -102,6 +104,11 @@ class Scenario(Base):
             self.sounds[v["name"]] = bool(v.get("on"))
         elif c == "spring_pass":                        # next phase
             self.flags.add("pass")
+        elif c == "spring_someone":                     # staged: someone passes → full + next phase
+            self.staged = "here"
+            self.flags.add("pass")
+        elif c == "spring_empty":                       # staged: nobody there → dark, the next pass moves on
+            self.staged = "empty"
         elif c == "spring_season":                      # next season (its beginning)
             self.flags.add("season")
         elif c == "spring_skip":
@@ -115,6 +122,7 @@ class Scenario(Base):
         self.voices, self.linger, self.near = {}, 0.0, 0.0
         self.trail = []
         self.empty_since = None                          # set when nobody is seen; an arrival after EMPTY_S = next phase
+        self.staged = None                               # None = radars; "here" / "empty" = staged from the page
         next_call = {k: time.monotonic() + 4.0 for k in CALLS}
         self._to_day(STAGE_DAY["winter"], force=True)            # every demo starts at the window's winter
         self.moment(STAGES[0][1])
@@ -178,16 +186,21 @@ class Scenario(Base):
         """Track the nearest person: True on a pass; updates lingering (0..1) and closeness (0..1)."""
         passed = "pass" in self.flags
         self.flags.discard("pass")
-        people = self.host.people
+        staged = getattr(self, "staged", None)
+        if staged:                                      # staged: a stand-in close to the table, or nobody
+            people = [{"x": 0, "y": FULL_MM, "d": FULL_MM}] if staged == "here" else []
+        else:
+            people = self.host.people
         p = min(people, key=lambda q: q["d"]) if people else None
-        if p is None:                                   # nobody: the season fades out (~5 s)
+        if p is None:                                   # nobody: after EMPTY_S the season goes dark within ~1 s
             self.trail.clear()
-            self.linger = max(0.0, self.linger - 0.03)
-            self.near = max(0.0, self.near - 0.02)
             if self.empty_since is None:
                 self.empty_since = now
+            if staged or now - self.empty_since >= EMPTY_S:
+                self.linger = max(0.0, self.linger - 0.1)
+                self.near = max(0.0, self.near - 0.1)
             return passed
-        if self.empty_since is not None and now - self.empty_since >= EMPTY_S:
+        if not staged and self.empty_since is not None and now - self.empty_since >= EMPTY_S:
             passed = True                               # someone comes by after a quiet while: next phase
         self.empty_since = None
         self.trail = [q for q in self.trail if now - q[0] < LINGER_S] + [(now, p["x"], p["y"])]

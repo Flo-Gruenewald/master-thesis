@@ -2,6 +2,12 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2 staging (Wizard of Oz) + 2-s empty rule
+- New S2 buttons "Someone passes" (`spring_someone`: activation to full in ~1 s + next phase) and "No one there" (`spring_empty`: dark within ~1 s). Once either is pressed, the run is "staged": the radars are ignored until the next start; the hint shows "· staged".
+- Sensor rule: `EMPTY_S` 5 → 2 s. A dropout under 2 s keeps the light; after 2 s with nobody the season goes dark within ~1 s, and the next person seen moves one phase on.
+- Files: `host/scenarios/spring_cleaning.py`, `host/web/app.js` (buttons), cache `v=65`, new test `test_spring_staged_and_two_second_empty`. Tests 16 passed. Checked live: start winter (0.0) → empty → someone: spring·Beginning (0.9) → empty (0.0) → someone: spring·Middle (0.95).
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — Real bee instead of the synthetic one
 - The room accent `bee_pass` (summer/spring accents of the room program) had no recording and came from `core/synth.py`, which sounded computery. Now `Sounds/accent/bee_pass.wav`: 4 s cut from Flo's bee recording `s2/bees.mp3` (strongest 4 s from 18.2 s), swell in/out, drifting left → right, 48 kHz stereo. The room loads `accent/<name>.wav` before the synth, so no code change. Checked: host restarted, accent triggered from the page. Audio is not in git (.gitignore); source noted in `Sounds/SOURCES.md`.
 - **Undo:** delete or rename `Sounds/accent/bee_pass.wav` → the synthetic bee comes back.
