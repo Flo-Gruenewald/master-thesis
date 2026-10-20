@@ -42,6 +42,7 @@ PULSE = {"winter": ("warm", "rust", [("fire", (0.08, 0.3), 0.8)]),     # orange 
          "spring": ("warm", "peach", [("birds", (0.04, 0.22), 0.9)]),   # sunrays through leaves: fast, varied
          "summer": ("peach", "warm", [("crickets", (0.05, 0.18), 0.9)]),  # chirp trains with pauses, varied
          "autumn": ("rust", "dawn", [("wind", (1.5, 3.5), 0.7)])}
+SCRIPT_ON_S, SCRIPT_BREAK_S = 20.0, 5.0   # scripted mode: every stage 20 s full, then 5 s dark, then the next
 SENSED_GAP_S = 10.0    # a sensed pass at most every 10 s: a flapping radar (unit offline) must not skip phases                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
 # Where S2 sits in the mission (booklet p. 36, data: 00_Bots/Documentation/Tools/build_mission_timeline.py):
 # the 2nd vulnerability window (days 345–534, way home), habitat winter 425–470 → spring 470–510 → summer 510–548.
@@ -86,6 +87,7 @@ class Scenario(Base):
     def __init__(self, host):
         super().__init__(host)
         self.sounds = {s: s != "frog" for s in SOUNDS}  # the tablet's choice, kept between runs (demo: cat → frog)
+        self.mode = "scripted"                           # "scripted" (time only) | "interactive" (radars + buttons); kept
         self.rows = [{"season": se, "general": g, "accent": a} for se, g, a in SOUND_ROWS]
         self.stage = self.passes = 0
         self.flags = set()                               # "pass" / "skip" from the web page
@@ -106,7 +108,9 @@ class Scenario(Base):
                 "mission_day": room.mission_day(), "start_day": STAGE_DAY["winter"],
                 "ground": "#%02x%02x%02x" % tuple(int(min(255, v)) for v in g),
                 "spot": round(0.08 + 0.6 * getattr(self, "linger", 0.0), 2),
-                "layers": self._layers(), "season": season, "hint": self.stage_hints[stage], "staged": bool(getattr(self, "staged", None)), "armed": bool(getattr(self, "force_empty", False)),
+                "layers": self._layers(), "season": season, "hint": self.stage_hints[stage], "staged": bool(getattr(self, "staged", None)), "mode": getattr(self, "mode", "interactive"),
+                "script_left": (round(max(0.0, (SCRIPT_ON_S if self.script_on else SCRIPT_BREAK_S) - (time.monotonic() - self.script_t)))
+                                if getattr(self, "script_t", None) else None), "armed": bool(getattr(self, "force_empty", False)),
                 "passes": self.passes, "near": round(getattr(self, "near", 0.0), 2),
                 "linger": round(getattr(self, "linger", 0.0), 2), "curve": self._curve,
                 "h": round(room.hour(), 2), "sim": sim is not None, "day": room.mission_day(),
@@ -123,6 +127,11 @@ class Scenario(Base):
         elif c == "spring_empty":                       # nobody there now: dark, armed, wait for the radar to be clear
             self.staged = None
             self.force_empty = self.armed = True
+        elif c == "spring_mode" and v in ("scripted", "interactive"):
+            self.mode = v
+            self.script_t = None                         # restart the script clock from the current stage
+            if v == "interactive":
+                self.staged = None
         elif c == "spring_season":                      # next season (its beginning)
             self.flags.add("season")
         elif c == "spring_skip":
@@ -140,7 +149,8 @@ class Scenario(Base):
         self.force_empty = False                         # "No one there": ignore the radar until it has been empty once
         self.armed = False                               # "No one there": the next person seen = next phase
         self.last_sensed = -1e9                          # the last sensed pass (SENSED_GAP_S)
-        self.dim, self.gust_until = 1.0, 0.0             # winter: a gust dims the fire glow
+        self.dim, self.gust_until, self.flare = 1.0, 0.0, False   # winter: a gust dims the fire glow, then it flares
+        self.script_t, self.script_on = None, True      # scripted mode: start of the current 20-s / 5-s part
         next_call = {k: time.monotonic() + 4.0 for k in CALLS}
         self._to_day(STAGE_DAY["winter"], force=True)            # every demo starts at the window's winter
         self.host.room.set_hour(EVENING_H)                       # … in the evening
@@ -150,6 +160,17 @@ class Scenario(Base):
         while True:
             await self.sleep(0.1)
             now = time.monotonic()
+            if self.mode == "scripted":                 # time only: 20 s with the season full, 5 s dark, next stage
+                if self.script_t is None:
+                    self.script_t, self.script_on = now, True
+                if self.script_on and now - self.script_t >= SCRIPT_ON_S:
+                    if self.stage == len(STAGES) - 1:
+                        break                           # after autumn: the scenario winds down
+                    self.script_t, self.script_on = now, False
+                elif not self.script_on and now - self.script_t >= SCRIPT_BREAK_S:
+                    self.script_t, self.script_on = now, True
+                    self.flags.add("pass")
+                self.staged = "here" if self.script_on else "empty"
             step = self._watch(now)
             if "season" in self.flags:
                 self.flags.discard("season")
@@ -172,7 +193,13 @@ class Scenario(Base):
             base_key, pulse_key, beds = PULSE.get(season, ("warm", "warm", []))
             col = self.color(pulse_key)
             # winter: while a wind gust plays, the fire glow sinks and stops flickering, then comes back in full
-            self.dim += ((0.3 if now < self.gust_until else 1.0) - self.dim) * 0.06
+            gust = now < self.gust_until
+            self.dim += ((0.25 if gust else 1.0) - self.dim) * 0.06   # very dim during the gust, never off
+            if gust:
+                self.flare = True
+            elif self.flare and self.dim > 0.5:         # the wind has passed: the fire flares up strongly
+                self.flare = False
+                self.light.accent(self.color("rust"), 1.0 * max(self.near, 0.5), seconds=1.8, mode="tint", name="flare")
             self.light.middle_tint = self.color(base_key) * self.dim
             for name, gap, amp in beds:                 # the table flickers / pulses with the season's sound
                 if (self.near > 0.2 and self.sounds.get(name, True) and name in STAGES[self.stage][4]

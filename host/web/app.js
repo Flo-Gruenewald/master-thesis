@@ -108,6 +108,7 @@ function sim(k) {
   else if (k === "season") cmd("spring_season");
   else if (k === "someone") cmd("spring_someone");
   else if (k === "empty") cmd("spring_empty");
+  else if (k === "mode" && S && S.spring) cmd("spring_mode", S.spring.mode === "scripted" ? "interactive" : "scripted");
   else if (k === "hold") cmd("postcard_hold");
 }
 
@@ -714,7 +715,7 @@ function seasonView(c, s) {        // Spring Cleaning: one card per season with 
         ${(sp.phases || {})[r.season] ? `<div class="si-phases">${sp.phases[r.season].map((ph) => `<span>${ph}</span>`).join("")}</div>` : ""}
         <div class="si-k">Ground</div><div class="si-chips" data-g></div>
         <div class="si-k">Accent</div><div class="si-chips" data-a></div></div>`).join("")}</div>
-      <div class="si-rescue">${(SIMS.spring_cleaning || []).map(([k, lab]) => `<button class="btn" data-sim="${k}">${lab}</button>`).join("")}</div></div>`;
+      <div class="si-rescue"><button class="btn si-mode" data-sim="mode"></button>${(SIMS.spring_cleaning || []).map(([k, lab]) => `<button class="btn" data-sim="${k}">${lab}</button>`).join("")}</div></div>`;
     for (const k of ["hint", "day", "time"]) c.sv[k] = c.season.querySelector(".si-" + k);
     c.sv.root = c.season.querySelector(".si"); c.sv.cards = [...c.season.querySelectorAll(".si-card")];
   }
@@ -730,7 +731,11 @@ function seasonView(c, s) {        // Spring Cleaning: one card per season with 
   });
   v.passes = sp.passes;
   v.root.classList.toggle("sim", !!sp.sim);
-  v.hint.textContent = `${sp.hint || ""}${sp.sim ? " · days are passing …" : act > 0.7 ? "" : here ? " · come closer" : " · resting"}${sp.staged ? " · held" : sp.armed ? " · waiting for the radar to clear" : ""}`;
+  const scripted = sp.mode === "scripted";
+  const mb = c.season.querySelector(".si-mode");
+  if (mb) { mb.textContent = scripted ? "Mode: Scripted" : "Mode: Interactive"; mb.classList.toggle("primary", scripted); }
+  c.season.querySelectorAll('.si-rescue [data-sim="someone"], .si-rescue [data-sim="empty"]').forEach((b) => (b.hidden = scripted));
+  v.hint.textContent = `${sp.hint || ""}${sp.sim ? " · days are passing …" : act > 0.7 ? "" : here ? " · come closer" : " · resting"}${sp.staged && !scripted ? " · held" : sp.armed ? " · waiting for the radar to clear" : ""}${scripted && sp.script_left != null ? ` · scripted ${sp.script_left} s` : ""}`;
   v.day.textContent = `Mission day ${sp.mission_day}`;
   v.time.textContent = hh;
 }

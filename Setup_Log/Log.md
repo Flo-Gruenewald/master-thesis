@@ -2,6 +2,12 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2: Scripted / Interactive mode; wind dims, the fire flares back
+- New toggle on the S2 tab "Mode: Scripted / Interactive" (`spring_mode`, kept between runs, default Scripted). Scripted = time only: every stage 20 s full (activation 1), 5 s dark, then the next (winter → spring B/M/E → summer → autumn), then the scenario winds down; radars ignored, "Someone passes" / "No one there" hidden; the hint shows "· scripted N s". Interactive = radars + both buttons as before.
+- Winter gust: the table glow sinks to 25 % (never off) and stops flickering; when the wind has passed the fire flares up once in full rust (1.8 s).
+- Live: winter on 1.0–20.7 s, dark to 25.5, spring·Beginning on 26.3–46.1, dark, spring·Middle on 51.2 s. Tests 16 passed. Cache `v=68`.
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — S2 winter: orange spotlight, the wind blows the fire down
 - Winter: the spotlight is warm orange `#E37156` (other seasons peach). The table glows orange and flickers to full rust `#A14530` with the fire. When a wind gust plays, the table glow sinks to ~30 % and stops flickering for 5 s, then comes back in full (`dim`, `gust_until`; the gust no longer makes its own pulse).
 - Live: winter, fire 121 pulses / 15 s, spotlight (top level) (105,52,40) = the warm orange ratio. Gust dimming not caught live (gusts come every 8–14 s). Tests 16 passed.
