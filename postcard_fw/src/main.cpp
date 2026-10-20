@@ -1,7 +1,7 @@
 // Tactile postcard v4 (16.10.2026): a heartbeat you can hold, on Wi-Fi. One pressure strip, one coin motor.
 // Ported from Hugbeat heartbeat_v4.ino (Arduino Uno) to the ESP32-C3 SuperMini; petting/purring left out.
 //
-// Wiring:  3V3 ── strip ──┬── GPIO1            GPIO5 ── 1 kΩ ── PN2222 base
+// Wiring:  3V3 ── strip ──┬── GPIO1 (C3) / D34 (ESP32)   GPIO5/D5 ── 1 kΩ ── PN2222 base (21.10: 2 motors in parallel)
 //                         └── 10 kΩ ── GND      motor + ── 5V, motor − ── collector, emitter ── GND
 //
 // Behaviour: always a faint resting heartbeat. The strip only knows held / not held (with the 10 kΩ pull-down it
@@ -20,7 +20,10 @@ static const char *BROKER = "192.168.137.1";
 static const char *T_TOUCH = "easteregged/in/postcard/touch";   // {"held":0|1,"i":0..1} on change + every 0.5 s held
 static const char *T_ARRIVED = "easteregged/postcard/arrived";  // → two short buzzes: the card wakes up
 
-static const int PIN_FSR = 1, PIN_MOTOR = 5;
+#ifndef PIN_FSR_GPIO
+#define PIN_FSR_GPIO 1          // C3 SuperMini: GPIO1; classic ESP32 DevKit (env esp32): GPIO34 (D34, ADC1)
+#endif
+static const int PIN_FSR = PIN_FSR_GPIO, PIN_MOTOR = 5;   // GPIO5 = "D5": both motors through one transistor
 static const float HOLD_ON = 0.5, HOLD_OFF = 0.3;   // held above / released below this share of rest → top
 static const float HOLD_S = 4.0;        // seconds of holding to reach full strength
 static const float RELEASE_S = 1.5;     // seconds for the strength to fall back after letting go
