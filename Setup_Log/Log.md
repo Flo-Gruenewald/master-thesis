@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — Real bee instead of the synthetic one
+- The room accent `bee_pass` (summer/spring accents of the room program) had no recording and came from `core/synth.py`, which sounded computery. Now `Sounds/accent/bee_pass.wav`: 4 s cut from Flo's bee recording `s2/bees.mp3` (strongest 4 s from 18.2 s), swell in/out, drifting left → right, 48 kHz stereo. The room loads `accent/<name>.wav` before the synth, so no code change. Checked: host restarted, accent triggered from the page. Audio is not in git (.gitignore); source noted in `Sounds/SOURCES.md`.
+- **Undo:** delete or rename `Sounds/accent/bee_pass.wav` → the synthetic bee comes back.
+
 ## 20.10.2026 — S1 always ends at 1:30
 - `scenarios/morning_jam.py`: the jam ends 1:30 after the start (`end_s = 90` in `[morning_jam]`, counted from the start incl. the 6-s wake, the same as the page's timer); the piano outro starts at once (no waiting for the loop end). The idle end (`idle_timeout_s`) and `max_minutes` are gone; Stop still ends it at once.
 - Checked live: wake 0 s → jam 6 s → outro 90.1 s (timer 90) → idle 97 s. Tests 15 passed.

@@ -5,7 +5,8 @@
 - `s2/here_comes_the_sun.mp3`: "Here Comes the Sun" (The Beatles, take 39), added by Flo for the S2 demo (private demo use).
 - `s2/music.wav`, `s3/music.wav`: the VR prototype's scenario music (`MUS_SpringCleaning`, `MUS_IMissYouSis`).
 - `s3/lena_01.wav`: Lena's voice (ElevenLabs, VR prototype take VO_L01).
-- `ground/fire.wav` and `accent/bee_pass`, `thunder_far`: none yet → generated placeholders (`core/synth.py`).
+- `ground/fire.wav` and `accent/thunder_far`: none yet → generated placeholders (`core/synth.py`).
+- `accent/bee_pass.wav` (20.10.2026): a 4-s fly-by cut from `s2/bees.mp3` (Pixabay, scottishperson, from 18.2 s), sine swell + left→right drift; replaces the synthetic bee that sounded computery.
 - `s3/rome/` (S3 "I Miss You, Sis": a Roman piazza in the evening), all **CC0** from Freesound, HQ previews (MP3), downloaded 16.10.2026:
   - `piazza.mp3`: "Italian Square at Sunday Lunch Time, Piazza del Duomo, Padua" by bassimat — https://freesound.org/s/832691/
   - `fountain.mp3`: "suonotartarughe" (fountain, Piazza Mattei, Rome) by lauraina — https://freesound.org/s/368788/
