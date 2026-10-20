@@ -27,7 +27,8 @@ static const char *T_ARRIVED = "easteregged/postcard/arrived";  // → two short
 #define PIN_MOTOR_GPIO 6        // 21.10.2026: GPIO5 of the C3 died (motor wired straight to the pin) → GPIO6
 #endif
 static const int PIN_FSR = PIN_FSR_GPIO, PIN_MOTOR = PIN_MOTOR_GPIO;   // both motors through one transistor
-static const float HOLD_ON = 0.5, HOLD_OFF = 0.3;   // held above / released below this share of rest → top
+static const float HOLD_ON_D = 80, HOLD_OFF_D = 40;   // 21.10: held = this far above the resting mean (raw units);
+static const int HOLD_N = 3;                          //   the strip with 10 kΩ only rises ~+50…+150 when pressed
 static const float HOLD_S = 4.0;        // seconds of holding to reach full strength
 static const float RELEASE_S = 1.5;     // seconds for the strength to fall back after letting go
 static const float CHARGE_UP = 0.12;    // tempo charge per second while held (≈ 8 s to the top)
@@ -85,9 +86,9 @@ void setup() {
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);       // full 0..3.3 V range
   delay(300);
-  int lo = 4095;
-  for (int i = 0; i < 40; i++) lo = min(lo, reading());   // lowest reading = rest (a touch can't raise it)
-  base = lo;
+  long sum = 0;
+  for (int i = 0; i < 40; i++) sum += reading();           // resting mean (don't touch the card while it starts)
+  base = sum / 40.0f;
   Serial.printf("postcard v3 ready, resting value %.0f\n", base);
   for (int i = 0; i < 2; i++) { analogWrite(PIN_MOTOR, 255); delay(250); analogWrite(PIN_MOTOR, 0); delay(250); }
   WiFi.mode(WIFI_STA);
@@ -106,9 +107,12 @@ void loop() {
 
   int raw = reading();
   rMin = min(rMin, raw); rMax = max(rMax, raw); rSum += raw; rN++;
-  float level = (raw - base) / max(200.0f, 4095 - base);          // 0 = rest, 1 = top of the range
-  if (!held && level > HOLD_ON) held = true;                       // hysteresis: no flicker at the edge
-  else if (held && level < HOLD_OFF) held = false;
+  static float f = -1;                                             // smoothed reading (~0.2 s): the strip is noisy
+  f = (f < 0) ? raw : f + (raw - f) * 0.1f;
+  if (!held && f - base > HOLD_ON_D) held = true;                  // pressed: clearly above the resting mean
+  else if (held && f - base < HOLD_OFF_D) held = false;            // let go: back near rest
+  if (f < base) base += (f - base) * 0.05f;                        // the rest: follows quickly down (a press at start-up
+  else if (!held) base += (f - base) * 0.0005f;                    //   can't spoil it), slowly up (drift, wires)
 
   // intensity: grows the longer it is held, falls back quickly after letting go; the tempo follows slowly
   if (held) intensity = min(1.0f, intensity + dt / HOLD_S);

@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard: sensitive press detection (strip with 10 kΩ)
+- The rebuilt card's strip only rises a little when pressed (rest ~700, pressed ~900–2200, noise ±100), the old rule needed a jump to ~2300. Now: smoothed reading (EMA 0.1 ≈ 0.2 s), held when > resting mean + 80, released below + 40; the rest follows quickly downwards (a press during start-up can't spoil the calibration) and slowly upwards. Motors on GPIO6 (Flo found a workaround for the transistor). Checked over serial: press 1.4 s → release 3.0 → press 4.2 → release 8.2 → held 9–24 s at full heartbeat (130 bpm).
+- Wi-Fi still to be saved by Flo in the "postcard-setup" portal (FLO-WORK); only then does a press reach the host (S3 photo).
+- **Undo:** `git revert` this commit and flash.
+
 ## 21.10.2026 — Postcard: motor moved to GPIO6 (GPIO5 dead)
 - No start buzz and 0 V on GPIO5: the pin most likely died while the motors were wired straight to it (battery + → motor → GPIO5). Motor output now GPIO6 (`PIN_MOTOR_GPIO`, default 6 for the C3; the DevKit env keeps D5). Flashed with Flo's OK; Flo moves the 1-kΩ base resistor from GPIO5 to GPIO6. Pressure strip still barely reacts (rest ~465, pressed ≤ ~640): loose contact suspected (3V3 / GPIO1 / 10 kΩ). Wi-Fi not saved yet (portal "postcard-setup").
 - **Undo:** set `PIN_MOTOR_GPIO 5` again and flash (only if GPIO5 works).
