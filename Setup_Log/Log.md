@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2 winter: louder fire, table flickers orange → red
+- Flo: the fire was too quiet and the flicker went white → orange. Now the fire bed is 0.50 (was 0.22; winter wind 0.10), and the table gets the season's base colour (`light.middle_tint`, new in `core/light.py`, cleared by `release()`): winter an orange ember `#E0602A`, the flicker tints towards red `#A8200F` (strength 0.55); spring/summer/autumn their warm colour as base too. No glow floor: nobody near = table off. `PULSE` = (base, pulse colour, beds).
+- Tests 16 passed; checked: table off in winter with nobody near. The flicker itself still to be seen at the table (Flo).
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — S2 in the evening: seasonal pulse accents on the table, fireplace in winter
 - S2 always shows 18:30 (`EVENING_H`): set at the start and on every phase step (`_to_day`), so the seasons compare at the same hour (winter already dark, summer still golden).
 - Table accent (MIDDLE) pulses in the season's warm colour with its sounds (`PULSE`): winter red-orange `#E0502A` flickering with the new fireplace bed, spring yellow-orange `#F2B04A` with the birds, summer yellow `#F5D06A` with the crickets, autumn brown-orange `#C07A30` with the wind; every call (cat, frog, bird call, gust, shower) also pulses once. Only while someone is near (activation > 0.2), scaled by closeness; a toggled-off sound does not pulse.

@@ -172,6 +172,7 @@ class Light:
         self.accent_boost = float(c.get("accent_boost", 1.0))  # weather accents: amplitude factor
         self.accent_level = float(c.get("accent_level", 0.0))  # >0: fixed glow (LED output share, e.g. 0.8)
         self.accent_tint = np.ones(3)                           # glow colour, set by the room (circadian or season)
+        self.middle_tint = None       # a scenario may give the table (MIDDLE) its own base colour; release() clears it
         self.accent_react = float(c.get("accent_react", 0.0))  # accent spots follow the accent sounds' loudness
         self.accent_audio = 0.0                                 # current loudness of the playing accent sounds (0..1)
         self.accent_colour = str(c.get("accent_colour", "circadian"))   # "expand": colour from the ground light
@@ -266,6 +267,7 @@ class Light:
 
     def release(self, fade=3.0, spots=None):
         """Give the base light back to the room program."""
+        self.middle_tint = None
         for k in spots or self.spots:
             self.wtgt[k] = 0.0
             self.wrate[k] = abs(self.w[k]) / max(fade, 1e-3) + 1e-6
@@ -367,6 +369,8 @@ class Light:
                 else:
                     glow = col * max(float(rc.max()), self.accent_floor) * self.accent_base
                 base = glow * self.duck * (1 + self.accent_react * self._acc_env) * (1 - w) + self.cur[k] * b * w
+                if self.middle_tint is not None:   # e.g. S2 winter: an orange ember instead of the cool ground hue
+                    base = self.middle_tint * float(base.max())
             else:
                 base = self.room_cur[k] * self.duck * (1 - w) + self.cur[k] * b * w
             vg[s["v"]:s["v"] + s["n"]] = base
