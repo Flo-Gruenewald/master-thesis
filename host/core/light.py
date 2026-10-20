@@ -142,6 +142,7 @@ class Wled:
         self.cap_ma = float(c.get("host_max_ma", 0))
         self.cap_per_ch = float(c.get("ledma", 55)) / 3
         self.gain = float(c.get("gain", 1.0))                # brightness factor for this unit (before the cap)
+        self.keep_awake = float(c.get("keep_awake", 0.0))    # min. white level on every LED: keeps a power bank on
         self.http_port = int(c.get("http_port", 80))       # 8081 for a Pi LED node (pi/kellerkind/led_node.py)
         self.spi = None
         self.ma = 0.0
@@ -495,6 +496,8 @@ class Light:
             if d.rgbw:
                 w = np.clip((x / d.white).min(axis=1), 0, 1)
                 x = np.column_stack([np.clip(x - w[:, None] * d.white, 0, 1), w])
+            if d.keep_awake and d.rgbw:
+                x[:, 3] = np.maximum(x[:, 3], d.keep_awake)
             if d.cap_ma:
                 x, d.ma = limit_current(x, d.cap_ma, d.cap_per_ch)
             data = (x * 255 + 0.5).astype(np.uint8).tobytes()

@@ -57,6 +57,7 @@ class Scenario:
 
     def cleanup(self, fade=2.0):
         """Called by the host whenever a run ends or is stopped."""
+        self.host.room.season_shown = None              # the clock follows the room program again
         for v in self._voices:
             v.ramp(0.0, fade)
         self._voices = []

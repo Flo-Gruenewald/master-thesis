@@ -2,6 +2,12 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2: clock shows S2's season, spotlight keep-awake, sunray birds, chirping crickets
+- iPad clock + home page: while S2 runs, the room state shows S2's season and its curve (`room.season_shown`, set by S2, cleared in `Scenario.cleanup`); time 18:30 and the mission day were already S2's. Live: winter 18:30 day 445 → spring 474 → summer 528; after Stop the room program's season again.
+- Spotlight on the power bank: `keep_awake = 0.05` on the `top` unit: faint white on all 77 LEDs (~70 mA) in every frame the host sends, so the power bank does not switch off (`Wled.keep_awake`, `core/light.py`). Not active while the room is turned off or the host is stopped. The unit was not reachable during the test (spotlight-unit.local) — check its power.
+- Spring birds: sunrays through leaves — pulses every 0.04–0.22 s, strength 0.3–1.0 × closeness, mostly 0.15–0.35 s glints, now and then a 1.2-s ray (77 pulses / 5 s live). Summer crickets: chirp trains every 0.05–0.18 s, strength 0.2–1.0, 0.08–0.3 s, 15 % chance of a 0.4–1.2-s pause (table brightness 0–149 live).
+- Tests 16 passed. **Undo:** `git revert` this commit; remove `keep_awake` from `room.toml`.
+
 ## 20.10.2026 — S2: Mars Rust colours, more reactive table, no skipped phases
 - Colours from the design system (`[colors]`): base → pulse: winter warm `#E37156` → dawn `#783526` (fire), spring warm → peach `#F2AD9D` (birds), summer peach → warm (crickets), autumn rust `#A14530` → dawn (wind).
 - More reactive: shorter gaps (fire 0.08–0.3 s, birds 0.6–1.8, crickets 0.35–0.7, wind 1.5–3.5), stronger pulses (0.6–0.8), calls 0.95 for 2.2 s.
@@ -25,7 +31,8 @@ Every change with undo steps. Newest first.
 - Source: MakerWorld "Starship – Ökosystem" (Spacerman-xx, CC BY-SA) in `Prints/starship/` (`front.3mf`, `shell.3mf`): a cutaway kit (open outer shell + interior parts), not usable directly at 60 mm. Rebuilt parametrically with its proportions: `Prints/scripts/make_starship_keychain.py` (H 60 mm, D 10.8, ogive nose 1.9 D, aft + forward flaps, ring at the tail, 2 Ø1.95 pin holes).
 - Two identical halves cut through the flap plane, lying on the cut face → no supports (only the pin-hole tops bridge, 6 mm²). Watertight, 1 body, 21 × 66 × 5.4 mm.
 - Files: `Prints/starship/starship_keychain_half.stl`, `starship_keychain_plate_x4.stl`, `README_keychain.md`.
-- **Undo:** delete those three files and the script.
+- Update: Flo wants structure on the front. Ring seams (0.45 × 0.3 mm, every 4.2 mm) on both halves; front half also gets 5 windows (1.0 × 1.4 × 0.45 mm) below the nose. Now `starship_keychain_front.stl` + `_back.stl`, plate = 2 + 2. Old plain half → `Prints/_archive/starship_keychain_half_plain.stl`. Still no supports.
+- **Undo:** delete the keychain STLs, README_keychain.md and the script; the plain half is in `Prints/_archive/`.
 
 ## 20.10.2026 — S2 "No one there" helps the sensors (no lock)
 - Flo: "No one there" should tell the sensors that nobody is there, and the next real passer-by reactivates. Now: dark at once, the next phase is armed, targets the radar still sees are ignored until the radar has been empty once; the next person seen after that = next phase. The radars are no longer locked. "Someone passes" stays the manual fallback (full + next phase, held until "No one there"). Hint shows "· held" / "· waiting for the radar to clear". Cache `v=66`, test updated, 16 passed. Live: someone → spring·Beginning 0.97 held; no one there → 0.0, radar clear.

@@ -408,14 +408,15 @@ class Room:
 
     def state(self):
         h = self.hour()
-        s = self.seasons[self.season]
+        shown = getattr(self, "season_shown", None) or self.season   # S2 shows its own season on the clock
+        s = self.seasons[shown]
         return {
             "dawn_h": s["dawn_h"], "dusk_h": s["dusk_h"], "peak_k": s["peak_k"], "sleep_h": self.sleep_h,
-            "curve": self.curve(), "blue": round(self.blue, 3),
+            "curve": self.curve(season=shown), "blue": round(self.blue, 3),
             "date": self.date.isoformat(), "mission_day": self.mission_day(), "launch": self.launch.isoformat(),
             "date_real": self.follow_real,
             "real_hour": round(self._real_h(), 2),
-            "season": self.season, "seasons": list(self.seasons),
+            "season": shown, "seasons": list(self.seasons),
             "season_info": {n: {"peak_k": v["peak_k"], "dawn_h": v["dawn_h"], "dusk_h": v["dusk_h"],
                                 "day_beds": v["day_beds"], "night_beds": v["night_beds"], "accents": v["accents"]}
                             for n, v in self.seasons.items()},

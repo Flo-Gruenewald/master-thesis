@@ -39,8 +39,8 @@ EVENING_H = 18.5       # 20.10.2026: S2 is always shown at 18:30: winter is alre
 # Winter: an orange ember that flickers towards red with the fire (a soft gradient, never towards white).
 # Colours: the Mars Rust design system ([colors] in room.toml): warm #E37156, peach #F2AD9D, rust #A14530, dawn #783526.
 PULSE = {"winter": ("warm", "dawn", [("fire", (0.08, 0.3), 0.8)]),
-         "spring": ("warm", "peach", [("birds", (0.6, 1.8), 0.7)]),
-         "summer": ("peach", "warm", [("crickets", (0.35, 0.7), 0.6)]),
+         "spring": ("warm", "peach", [("birds", (0.04, 0.22), 0.9)]),   # sunrays through leaves: fast, varied
+         "summer": ("peach", "warm", [("crickets", (0.05, 0.18), 0.9)]),  # chirp trains with pauses, varied
          "autumn": ("rust", "dawn", [("wind", (1.5, 3.5), 0.7)])}
 SENSED_GAP_S = 10.0    # a sensed pass at most every 10 s: a flapping radar (unit offline) must not skip phases                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
 # Where S2 sits in the mission (booklet p. 36, data: 00_Bots/Documentation/Tools/build_mission_timeline.py):
@@ -167,6 +167,7 @@ class Scenario(Base):
                 await self._simulate()
             self._mix(fade=0.6)
             season = STAGES[self.stage][1]
+            self.host.room.season_shown = season          # the iPad clock + home page show S2's season
             base_key, pulse_key, beds = PULSE.get(season, ("warm", "warm", []))
             col = self.color(pulse_key)
             self.light.middle_tint = self.color(base_key)
@@ -174,8 +175,18 @@ class Scenario(Base):
                 if (self.near > 0.2 and self.sounds.get(name, True) and name in STAGES[self.stage][4]
                         and now >= next_pulse.get(name, 0.0)):
                     a = amp * self.near * random.uniform(0.6, 1.0)
-                    self.light.accent(col, a, seconds=max(0.3, gap[1] * 1.2), mode="tint", name=name)
-                    next_pulse[name] = now + random.uniform(*gap)
+                    dur = max(0.3, gap[1] * 1.2)
+                    if name == "birds":                     # sunrays: mostly quick glints, now and then a longer ray
+                        a = amp * self.near * random.uniform(0.3, 1.0)
+                        dur = random.choice((0.15, 0.25, 0.35, 0.35, 1.2))
+                    gap_s = random.uniform(*gap)
+                    if name == "crickets":                  # chirp trains: quick pulses, uneven strength, then a pause
+                        a = amp * self.near * random.uniform(0.2, 1.0)
+                        dur = random.choice((0.08, 0.1, 0.12, 0.15, 0.3))
+                        if random.random() < 0.15:
+                            gap_s += random.uniform(0.4, 1.2)
+                    self.light.accent(col, a, seconds=dur, mode="tint", name=name)
+                    next_pulse[name] = now + gap_s
             for k, (rel, gain, gap) in CALLS.items():   # the season's accents, now and then
                 if CALL_SEASON[k] == STAGES[self.stage][1] and now >= next_call[k] and self.sounds[k]:
                     if self.near > 0.2:                     # accents only while someone is near

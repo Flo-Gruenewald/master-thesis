@@ -109,6 +109,7 @@ mdns = "spotlight-unit"        # renamed 08.10 (was easteregged-top); MQTT broke
 led_count = 77
 rgbw = true
 white_k = 4000
+keep_awake = 0.05              # 20.10.2026: faint white on all 77 LEDs (~70 mA) so the power bank never switches the unit off
 
 [[wled]]
 id = "wall"                    # GROUND: wall strip (60 LEDs) on the Gledopto GL-C-015WL (WLED, built-in level shifter).
