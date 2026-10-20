@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard: new ESP32-C3 flashed (two motors on GPIO5)
+- Flo's postcard breadboard broke; rebuilt with two coin motors in parallel on GPIO5 (one PN2222, a diode per motor). The board on USB turned out to be an ESP32-C3 (MAC 88:56:a6:6d:0b:c4), not a DevKit → flashed the existing C3 firmware (`env c3`: strip GPIO1, motors GPIO5) from `C:\pc\postcard` with Flo's OK. Serial: "postcard ready, resting value 1403", heartbeat running (pwm 170, 60 bpm). No Wi-Fi saved yet → AP "postcard-setup" (192.168.4.1): Flo enters FLO-WORK there himself.
+- Also prepared (not flashed): `env esp32` for a classic ESP32 DevKit (strip D34, motors D5), commit `c2f98c0`.
+- **Undo:** flash the previous firmware (same code; nothing else changed on the device).
+
 ## 20.10.2026 — Day curve: no blue strip; the pre-sleep hill = evening light × share
 - The blue morning area no longer draws a thin strip along the day where it is 0. The pre-sleep hill's height was the comfy share alone (0.45 × share/0.9 of the scale, so in winter almost as high as the day's peak, independent of the real evening light). Now it is drawn like the blue: light level at that hour × comfy share, so it shows how much warm light there really is (small in summer, larger in winter). Cache `v=72`. Checked on the home page (summer).
 - **Undo:** `git revert` this commit.
@@ -23,6 +28,7 @@ Every change with undo steps. Newest first.
 - Flo: use the actual MakerWorld meshes. `Prints/scripts/make_starship_keychain_mesh.py`: front = `front_3` + `front_9` (steel half shells, window rows), back = `shell_1/3/5` (tile side, flaps); each stacked (lengths 343/345 mm source), filled with a core 1 mm behind the skin (windows stay recesses), cut at the same plane, scaled to 65 mm, laid on the cut face; loop + 2 pin holes (Ø1.95).
 - Back: source tiles too fine at this scale → big staggered tiles cut in (2.2 mm, groove 0.5, depth 0.35). **Update (Flo):** bricks replaced by big hexagons (corner radius 2.0 mm → ~3.5 × 4 mm, edges = 0.5 mm grooves, 0.35 deep; 309 edges, `tiles()`); still no supports (overhangs 87 mm² = 0.5 mm groove bridges + pin-hole tops). Flaps floated 0.46 mm above the bed in the source → filled down; 0.4 mm solid base closes hairline gaps of the source rims.
 - **Final (Flo):** back reverted to the model's own tile texture ("scales"), no bricks/hexagons (`HEX_TILES = False`; the hexagon code stays switchable). Print fixes kept (core to the bed, flaps filled down, 0.4 mm base). Overhangs: front 7.7 mm², back 42 mm² (pin-hole tops, small texture edges).
+- **Final 2 (Flo: "the original scales, just larger"):** the model's tiles are pointy-top hexagons ~4.6 mm (source) = 0.9 mm on the keychain. Back hull now rebuilt with `scaled_tiles()`: smooth source hull radius, refined, outer points warped in on a hexagon grid (corner radius 1.75 mm → ~3 mm hexagons, outline grooves 0.45 mm, 0.3 deep; `SCALES`). Continuous outlines, no centre split, constant size on the nose. Back: overhangs 42 mm², 0.3 nozzle OK.
 - Ender-3 S1 check: no supports; only overhangs = pin-hole tops and 0.5 mm groove bridges; min thickness 0.23 mm at flap edges; plate ≈ 85 × 75 mm. Windows only ~1.0 × 0.3 mm → fine slots.
 - Files: `Prints/starship/starship_keychain_{front,back,plate_x4}.stl`, `keychain_preview.png`, `README_keychain.md`. Earlier parametric version → `Prints/_archive/starship_keychain_parametric/` (+ `make_starship_keychain.py` stays as the parametric alternative).
 - **Undo:** copy the STLs from `Prints/_archive/starship_keychain_parametric/` back.
