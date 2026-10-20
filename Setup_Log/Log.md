@@ -2,6 +2,12 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S3: pressing the card opens the photo on the clock, Rome for 30 s; story lines in Neue Montreal
+- S3 (`scenarios/miss_you_sis.py`): after the postcard arrives (table pulses), the first press opens the photo of Lena and Alice on the iPad clock (`clock.html` overlay, fades in/out over 2.5 s, state `postcard.photo`); Rome fades in over 10 s, bells + Lena's voice (if the file exists) at full, fades out from 24 s, everything is gone 30 s after the press → home. Not picked up for 240 s → ends. Live: press 1.5 s → rome 1.0 at 10 s → home at 30.4 s.
+- The photo is `host/web/s3_photo.jpg`, kept out of git (`.gitignore`). Placeholder for now: the VR still `V5_03b_lena_earth.png` → **Flo: replace it with the real photo of Lena and Alice (same name, .jpg)**.
+- Scenario tab story lines (the title sentence) now in Neue Montreal 400 instead of Pangaia. Cache `v=69`. Tests 16 passed.
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — S2: Scripted / Interactive mode; wind dims, the fire flares back
 - New toggle on the S2 tab "Mode: Scripted / Interactive" (`spring_mode`, kept between runs, default Scripted). Scripted = time only: every stage 20 s full (activation 1), 5 s dark, then the next (winter → spring B/M/E → summer → autumn), then the scenario winds down; radars ignored, "Someone passes" / "No one there" hidden; the hint shows "· scripted N s". Interactive = radars + both buttons as before.
 - Winter gust: the table glow sinks to 25 % (never off) and stops flickering; when the wind has passed the fire flares up once in full rust (1.8 s).

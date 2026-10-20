@@ -21,7 +21,10 @@ from core.scenario import Scenario as Base
 PIAZZA = {"piazza": ("s3/rome/piazza", 0.30, "room"), "fountain": ("s3/rome/fountain", 0.24, "table"),
           "swallows": ("s3/rome/swallows", 0.16, "room")}       # sound, gain at full hold, where
 GOLD = np.array([1.0, 0.62, 0.30])      # golden hour in Rome
-FADE_IN, FADE_OUT = 0.6, 0.18          # how fast Rome follows the card (per second; out ≈ 6 s)
+FADE_IN, FADE_OUT = 0.6, 0.18          # (before 20.10) how fast Rome followed the card
+# 20.10.2026 (Flo): pressing the card opens the photo of Lena and Alice on the clock (iPad); Rome fades in slowly,
+# stays, and everything is gone 30 s after the press.
+SHOW_S, RISE_S, FALL_S = 30.0, 10.0, 6.0
 VOICE = "s3/lena_rome"                 # Flo records it (ElevenLabs); without the file: bells only
 
 
@@ -49,7 +52,8 @@ class Scenario(Base):
             self.sim_hold = not self.sim_hold if v is None else bool(v)
 
     def ui(self):
-        return {"held": self.held or self.sim_hold, "rome": round(getattr(self, "h", 0.0), 2)}
+        return {"held": self.held or self.sim_hold, "rome": round(getattr(self, "h", 0.0), 2),
+                "photo": bool(getattr(self, "photo", False))}
 
     def _hold(self, dt):
         """Target 0..1 from the card (or the web page's stand-in, which ramps like the card does)."""
@@ -74,35 +78,41 @@ class Scenario(Base):
         self.host.bus.publish("postcard/arrived", 1)                    # the card buzzes twice
         next_vespa, last = time.monotonic() + 6.0, time.monotonic()
         next_pulse = time.monotonic() + 1.0
+        press_t, self.photo = None, False
         while True:
             await self.sleep(0.1)
             now = time.monotonic()
             dt, last = now - last, now
-            target = self._hold(dt)
-            if now - t0 > float(c.get("wait_s", 45)) and ever < 0.05:   # never picked up: a soft taste of Rome
-                target = 0.3
-            rate = FADE_IN if target > self.h else FADE_OUT
-            self.h += max(-rate * dt, min(rate * dt, target - self.h))
+            if press_t is None:
+                if self._hold(dt) > 0.05:                 # the card is pressed: photo + Rome
+                    press_t, self.photo = now, True
+                    self.moment("rome")
+                    self.host.event({"type": "note", "text": "the photo of Lena and Alice opens; Rome fades in"})
+                elif now - t0 > 240:                      # never picked up
+                    break
+                elif now >= next_pulse:                   # not picked up yet: the table pulses
+                    li.accent(self.color("warm"), 0.55, seconds=1.6, mode="tint", name="postcard")
+                    next_pulse = now + 2.8
+                target = 0.0
+            else:
+                el = now - press_t
+                if el >= SHOW_S:
+                    break
+                target = min(1.0, el / RISE_S) if el < SHOW_S - FALL_S else max(0.0, (SHOW_S - el) / FALL_S)
+            self.h = target
             ever = max(ever, self.h)
-            if self.h > 0.05 and self.host.moment == "arrived":
-                self.moment("rome")
-            if self.host.moment == "arrived" and now >= next_pulse:      # not picked up yet: the table pulses
-                li.accent(self.color("warm"), 0.55, seconds=1.6, mode="tint", name="postcard")
-                next_pulse = now + 2.8
             self._mix(table)
             if self.h > 0.4 and now >= next_vespa:                       # a Vespa crosses the room
                 a.ambient_shot(self.sound("s3/rome/vespa"), 0.35 * self.h, random.choice(["room>table", "table>room"]))
                 next_vespa = now + random.uniform(15, 25)
-            if self.h > 0.85 and not bells_done:                         # held fully: bells, then Lena
+            if self.h > 0.95 and not bells_done:                         # Rome in full: bells, then Lena
                 bells_done = True
                 self.moment("lena")
                 a.ambient_shot(self.sound("s3/rome/bells"), 0.45)
                 if self.has_sound(VOICE):
-                    a.oneshot(self.sound(VOICE), gain=float(c.get("voice_gain", 1.0)), delay=6.0)
+                    a.oneshot(self.sound(VOICE), gain=float(c.get("voice_gain", 1.0)), delay=4.0)
                 self.host.event({"type": "note", "text": "Rome: the bells" + (", then Lena" if self.has_sound(VOICE) else "")})
-            still_t = (still_t or now) if self.h < 0.02 else None        # Rome has faded out ...
-            if (ever > 0.25 and still_t and now - still_t > float(c.get("rest_s", 20))) or now - t0 > 240:
-                break                                                     # ... and the card lies still: home
+        self.photo = False
 
         # ---- home ------------------------------------------------------------------------
         self.moment("home")

@@ -15,3 +15,5 @@ __pycache__/
 *.log
 _backup_*/
 wled/backup_*/
+# the photo of Lena and Alice (S3) stays local
+host/web/s3_photo.*

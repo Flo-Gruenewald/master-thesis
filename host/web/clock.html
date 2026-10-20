@@ -316,6 +316,9 @@ $("spring").addEventListener("click", (e) => {
 });
 function onState(s) {
   springBar(s);
+  const ph = document.getElementById("photo"), show = !!(s.postcard && s.postcard.photo);   // S3: the photo from Lena
+  if (show && ph.hidden) { ph.hidden = false; requestAnimationFrame(() => ph.classList.add("on")); }
+  if (!show && !ph.hidden && ph.classList.contains("on")) { ph.classList.remove("on"); setTimeout(() => { ph.hidden = true; }, 2600); }
   const r = s.room;
   S = r;
   $("off").style.display = "none";
@@ -382,5 +385,12 @@ function connect() {
 }
 connect();
 </script>
+<div id="photo" class="photo" hidden><img src="/static/s3_photo.jpg" alt="Lena and Alice"></div>
+<style>
+  .photo { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(10, 8, 7, .92);
+    opacity: 0; transition: opacity 2.5s ease; }
+  .photo.on { opacity: 1; }
+  .photo img { max-width: 86vw; max-height: 82vh; border-radius: 1.2vh; box-shadow: 0 0 6vh rgba(227, 113, 86, .25); }
+</style>
 </body>
 </html>
