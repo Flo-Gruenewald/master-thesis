@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — Day curve: no blue strip; the pre-sleep hill = evening light × share
+- The blue morning area no longer draws a thin strip along the day where it is 0. The pre-sleep hill's height was the comfy share alone (0.45 × share/0.9 of the scale, so in winter almost as high as the day's peak, independent of the real evening light). Now it is drawn like the blue: light level at that hour × comfy share, so it shows how much warm light there really is (small in summer, larger in winter). Cache `v=72`. Checked on the home page (summer).
+- **Undo:** `git revert` this commit.
+
 ## 20.10.2026 — Day curve: soft pre-sleep hill, one colour for pre-/post-sleep
 - The comfy (pre-sleep) light is drawn as a soft hill with a vertical gradient (orange `#E37156` → dark rust, like the blue morning's teal gradient), no longer as a block, and nothing where it is 0 (the thin orange strip along the whole day is gone). Softer edges in the model too (`Room.comfy`: in over 1.5 h from dusk −45 min, out over the last 1 h before bed). Label back to "pre-sleep"; post-sleep band, label and legend in the same rust as pre-sleep. Cache `v=71`. Checked on the home page.
 - **Undo:** `git revert` this commit.

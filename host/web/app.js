@@ -254,16 +254,15 @@ $("now-btn").onclick = () => cmd("now");
 // ---- circadian curve
 const CW = 960, CH = 260;
 // the circadian day (home page and S2): the curve, night/pre-sleep/post-sleep bands, blue morning; p = id prefix
-const maxComfy = (v) => Math.min(1, v / 0.9);          // the comfy hill's height (winter = full)
 function curveMarkup(r, X, Y, p) {
   const n = r.curve.length, sleep = r.sleep_h || 22.5, wake = r.dawn_h;
   const pts = r.curve.map((c, i) => [X((24 * i) / n), Y(c[0])]);
   pts.push([CW, Y(r.curve[0][0])]);
   const line = pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
-  const bpts = r.curve.map((c, i) => [X((24 * i) / n), Y(c[0] * (c[2] || 0))]);
+  const bpts = r.curve.map((c, i) => [X((24 * i) / n), (c[2] || 0) > 0.005 ? Y(c[0] * c[2]) : CH]);   // no strip where 0
   const blue = `M0 ${CH} ` + bpts.map((q) => `L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(" ") + ` L${CW} ${CH} Z`;
   // the comfy (pre-sleep) light: a soft orange hill, like the blue morning; nothing where it is 0 (no strip along the day)
-  const cpts = r.curve.map((c, i) => [X((24 * i) / n), (c[3] || 0) > 0.005 ? Y(0.45 * maxComfy(c[3])) : CH]);
+  const cpts = r.curve.map((c, i) => [X((24 * i) / n), (c[3] || 0) > 0.005 ? Y(c[0] * c[3]) : CH]);   // like the blue: light × share
   const comfy = `M0 ${CH} ` + cpts.map((q) => `L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(" ") + ` L${CW} ${CH} Z`;
   const stops = r.curve.filter((_, i) => i % 2 === 0).map((c, i, a) => `<stop offset="${(i / (a.length - 1)).toFixed(3)}" stop-color="${rgbStr(roomColour(c[1], c[2] || 0))}"/>`).join("");
   return `<defs><linearGradient id="${p}kg" x1="0" x2="1">${stops}</linearGradient>
