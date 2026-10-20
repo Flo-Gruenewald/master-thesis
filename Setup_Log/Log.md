@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2 "No one there" helps the sensors (no lock)
+- Flo: "No one there" should tell the sensors that nobody is there, and the next real passer-by reactivates. Now: dark at once, the next phase is armed, targets the radar still sees are ignored until the radar has been empty once; the next person seen after that = next phase. The radars are no longer locked. "Someone passes" stays the manual fallback (full + next phase, held until "No one there"). Hint shows "· held" / "· waiting for the radar to clear". Cache `v=66`, test updated, 16 passed. Live: someone → spring·Beginning 0.97 held; no one there → 0.0, radar clear.
+- **Undo:** `git revert` this commit (back to the staged lock of `0c2ae53`).
+
 ## 20.10.2026 — S2 staging (Wizard of Oz) + 2-s empty rule
 - New S2 buttons "Someone passes" (`spring_someone`: activation to full in ~1 s + next phase) and "No one there" (`spring_empty`: dark within ~1 s). Once either is pressed, the run is "staged": the radars are ignored until the next start; the hint shows "· staged".
 - Sensor rule: `EMPTY_S` 5 → 2 s. A dropout under 2 s keeps the light; after 2 s with nobody the season goes dark within ~1 s, and the next person seen moves one phase on.

@@ -410,7 +410,12 @@ def test_spring_staged_and_two_second_empty():
     assert s.near < lit                               # > 2 s empty: fading to dark
     s.host.people = [{"x": 0, "y": 900, "d": 900}]
     assert s._watch(t + 4.0) is True                  # the next person = next phase
-    s.command("spring_empty", None)
-    assert s._watch(t + 5.0) is False and s.near < lit   # staged empty ignores the radar
+    s.force_empty = False
     s.command("spring_someone", None)
-    assert s._watch(t + 6.0) is True                  # staged pass = next phase
+    assert s._watch(t + 5.0) is True                  # manual pass = next phase, held
+    s.command("spring_empty", None)                   # "No one there" while the radar still sees the old target
+    assert s._watch(t + 6.0) is False and s.force_empty   # ignored: dark, waiting for the radar to clear
+    s.host.people = []
+    assert s._watch(t + 7.0) is False and not s.force_empty   # radar clear
+    s.host.people = [{"x": 0, "y": 900, "d": 900}]
+    assert s._watch(t + 8.0) is True                  # the next real person = next phase

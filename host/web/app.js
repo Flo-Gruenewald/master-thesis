@@ -730,7 +730,7 @@ function seasonView(c, s) {        // Spring Cleaning: one card per season with 
   });
   v.passes = sp.passes;
   v.root.classList.toggle("sim", !!sp.sim);
-  v.hint.textContent = `${sp.hint || ""}${sp.sim ? " · days are passing …" : act > 0.7 ? "" : here ? " · come closer" : " · resting"}${sp.staged ? " · staged" : ""}`;
+  v.hint.textContent = `${sp.hint || ""}${sp.sim ? " · days are passing …" : act > 0.7 ? "" : here ? " · come closer" : " · resting"}${sp.staged ? " · held" : sp.armed ? " · waiting for the radar to clear" : ""}`;
   v.day.textContent = `Mission day ${sp.mission_day}`;
   v.time.textContent = hh;
 }
