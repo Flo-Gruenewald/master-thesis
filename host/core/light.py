@@ -174,6 +174,8 @@ class Light:
         self.accent_level = float(c.get("accent_level", 0.0))  # >0: fixed glow (LED output share, e.g. 0.8)
         self.accent_tint = np.ones(3)                           # glow colour, set by the room (circadian or season)
         self.middle_tint = None       # a scenario may give the table (MIDDLE) its own base colour; release() clears it
+        self.comfy = 0.0              # the room's comfy light 0..1 (dusk → bed), set by the room program
+        self.comfy_rgb = hex_rgb("#E37156")
         self.accent_react = float(c.get("accent_react", 0.0))  # accent spots follow the accent sounds' loudness
         self.accent_audio = 0.0                                 # current loudness of the playing accent sounds (0..1)
         self.accent_colour = str(c.get("accent_colour", "circadian"))   # "expand": colour from the ground light
@@ -370,6 +372,8 @@ class Light:
                 else:
                     glow = col * max(float(rc.max()), self.accent_floor) * self.accent_base
                 base = glow * self.duck * (1 + self.accent_react * self._acc_env) * (1 - w) + self.cur[k] * b * w
+                if self.comfy > 0.001:             # the evening comfy light: a warm orange glow on the table
+                    base = base + self.comfy_rgb * (0.25 * self.comfy * self.duck * (1 - w))
                 if self.middle_tint is not None:   # e.g. S2 winter: an orange ember instead of the cool ground hue
                     base = self.middle_tint * float(base.max())
             else:

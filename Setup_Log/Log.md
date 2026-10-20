@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — Comfy light (booklet p. 49) in the room model; S3 photo
+- The booklet's orange evening block ("comfy light", dusk → bed, the bracket to the morning blue) is now in the day model: `Room.comfy(h, season)` (strength winter 0.9, autumn 0.75, spring 0.6 as on p. 50, summer 0.4; on from dusk −15 min, off 15 min before bed), a 4th value in `Room.curve()`. The day curve on the home page / S2 draws it as an orange block (label "comfy light"). In the room it is only a hint (Flo: mainly for the visualisation): + 0.25 × comfy of `#E37156` on the table glow in the room program (`Light.comfy`). Live: autumn table 12:00 (143,36,2) vs 20:30 (140,58,30) at the earlier 0.45; now softer. Tests 16 passed. Cache `v=70`.
+- S3 photo: `03_Design-Booklet/Images/Prototype Photos/rome-scenario-3.jpg` copied to `host/web/s3_photo.jpg` (local only, .gitignore).
+- **Undo:** `git revert` this commit; the photo: put the previous file back or delete it.
+
 ## 20.10.2026 — S2 scripted: "Here Comes the Sun" phase 30 s
 - Scripted mode: spring · End (the song) stays 30 s (`SCRIPT_ON`), every other stage 20 s, breaks 5 s. The countdown in the hint follows. Tests 16 passed; not timed live.
 - **Undo:** `git revert` this commit.
@@ -9,6 +14,7 @@ Every change with undo steps. Newest first.
 ## 20.10.2026 — Starship keychain from the real model (front = windows, back = big tiles)
 - Flo: use the actual MakerWorld meshes. `Prints/scripts/make_starship_keychain_mesh.py`: front = `front_3` + `front_9` (steel half shells, window rows), back = `shell_1/3/5` (tile side, flaps); each stacked (lengths 343/345 mm source), filled with a core 1 mm behind the skin (windows stay recesses), cut at the same plane, scaled to 65 mm, laid on the cut face; loop + 2 pin holes (Ø1.95).
 - Back: source tiles too fine at this scale → big staggered tiles cut in (2.2 mm, groove 0.5, depth 0.35). **Update (Flo):** bricks replaced by big hexagons (corner radius 2.0 mm → ~3.5 × 4 mm, edges = 0.5 mm grooves, 0.35 deep; 309 edges, `tiles()`); still no supports (overhangs 87 mm² = 0.5 mm groove bridges + pin-hole tops). Flaps floated 0.46 mm above the bed in the source → filled down; 0.4 mm solid base closes hairline gaps of the source rims.
+- **Final (Flo):** back reverted to the model's own tile texture ("scales"), no bricks/hexagons (`HEX_TILES = False`; the hexagon code stays switchable). Print fixes kept (core to the bed, flaps filled down, 0.4 mm base). Overhangs: front 7.7 mm², back 42 mm² (pin-hole tops, small texture edges).
 - Ender-3 S1 check: no supports; only overhangs = pin-hole tops and 0.5 mm groove bridges; min thickness 0.23 mm at flap edges; plate ≈ 85 × 75 mm. Windows only ~1.0 × 0.3 mm → fine slots.
 - Files: `Prints/starship/starship_keychain_{front,back,plate_x4}.stl`, `keychain_preview.png`, `README_keychain.md`. Earlier parametric version → `Prints/_archive/starship_keychain_parametric/` (+ `make_starship_keychain.py` stays as the parametric alternative).
 - **Undo:** copy the STLs from `Prints/_archive/starship_keychain_parametric/` back.

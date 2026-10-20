@@ -253,6 +253,17 @@ class Room:
         blue = s.get("blue", 0.0) * rise * (1 - smoothstep((h - (wake + 3.0)) / 3.5)) * (1 - presleep)
         return level, k, blue
 
+    COMFY = {"winter": 0.9, "autumn": 0.75, "spring": 0.6, "summer": 0.4}   # booklet p. 49/50: strongest in winter
+
+    def comfy(self, h, season=None):
+        """The comfy light 0..1 (booklet p. 49): a warm orange accent from the season's dusk to bed that gathers
+        the crew, the evening bracket to the morning blue."""
+        name = season or self.season
+        s = self.seasons[name]
+        dusk, sleep = s["dusk_h"], self.sleep_h
+        on = smoothstep((h - (dusk - 0.25)) / 0.75) * (1 - smoothstep((h - (sleep - 0.25)) / 0.5))
+        return float(s.get("comfy", self.COMFY.get(name, 0.6))) * on
+
     def day_light(self, h):
         """(level 0..1, colour temperature K) at hour h for the current season."""
         level, k, _ = self.day(h)
@@ -364,6 +375,7 @@ class Room:
             self._new_day()
         self._last_h = h
         self.level, self.k, self.blue = self.day(h)
+        self.light.comfy = self.comfy(h) if self.middle_on else 0.0
         if self.accent_colour == "circadian":   # blue-tinted by day (alerting), orange in the evening (no blue)
             self.light.accent_tint = circadian_tint(self.k, self.blue)
         else:
@@ -403,7 +415,7 @@ class Room:
         out = []
         for i in range(n):
             lv, k, b = self.day(24 * i / n, season)
-            out.append([round(lv, 3), int(k), round(b, 3)])
+            out.append([round(lv, 3), int(k), round(b, 3), round(self.comfy(24 * i / n, season), 3)])
         return out
 
     def state(self):
