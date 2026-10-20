@@ -2,6 +2,17 @@
 
 Every change with undo steps. Newest first.
 
+## 20.10.2026 — S2 scripted: "Here Comes the Sun" phase 30 s
+- Scripted mode: spring · End (the song) stays 30 s (`SCRIPT_ON`), every other stage 20 s, breaks 5 s. The countdown in the hint follows. Tests 16 passed; not timed live.
+- **Undo:** `git revert` this commit.
+
+## 20.10.2026 — Starship keychain from the real model (front = windows, back = big tiles)
+- Flo: use the actual MakerWorld meshes. `Prints/scripts/make_starship_keychain_mesh.py`: front = `front_3` + `front_9` (steel half shells, window rows), back = `shell_1/3/5` (tile side, flaps); each stacked (lengths 343/345 mm source), filled with a core 1 mm behind the skin (windows stay recesses), cut at the same plane, scaled to 65 mm, laid on the cut face; loop + 2 pin holes (Ø1.95).
+- Back: source tiles too fine at this scale → big staggered tiles cut in (2.2 mm, groove 0.5, depth 0.35). **Update (Flo):** bricks replaced by big hexagons (corner radius 2.0 mm → ~3.5 × 4 mm, edges = 0.5 mm grooves, 0.35 deep; 309 edges, `tiles()`); still no supports (overhangs 87 mm² = 0.5 mm groove bridges + pin-hole tops). Flaps floated 0.46 mm above the bed in the source → filled down; 0.4 mm solid base closes hairline gaps of the source rims.
+- Ender-3 S1 check: no supports; only overhangs = pin-hole tops and 0.5 mm groove bridges; min thickness 0.23 mm at flap edges; plate ≈ 85 × 75 mm. Windows only ~1.0 × 0.3 mm → fine slots.
+- Files: `Prints/starship/starship_keychain_{front,back,plate_x4}.stl`, `keychain_preview.png`, `README_keychain.md`. Earlier parametric version → `Prints/_archive/starship_keychain_parametric/` (+ `make_starship_keychain.py` stays as the parametric alternative).
+- **Undo:** copy the STLs from `Prints/_archive/starship_keychain_parametric/` back.
+
 ## 20.10.2026 — S3: pressing the card opens the photo on the clock, Rome for 30 s; story lines in Neue Montreal
 - S3 (`scenarios/miss_you_sis.py`): after the postcard arrives (table pulses), the first press opens the photo of Lena and Alice on the iPad clock (`clock.html` overlay, fades in/out over 2.5 s, state `postcard.photo`); Rome fades in over 10 s, bells + Lena's voice (if the file exists) at full, fades out from 24 s, everything is gone 30 s after the press → home. Not picked up for 240 s → ends. Live: press 1.5 s → rome 1.0 at 10 s → home at 30.4 s.
 - The photo is `host/web/s3_photo.jpg`, kept out of git (`.gitignore`). Placeholder for now: the VR still `V5_03b_lena_earth.png` → **Flo: replace it with the real photo of Lena and Alice (same name, .jpg)**.

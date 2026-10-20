@@ -43,6 +43,7 @@ PULSE = {"winter": ("warm", "rust", [("fire", (0.08, 0.3), 0.8)]),     # orange 
          "summer": ("peach", "warm", [("crickets", (0.05, 0.18), 0.9)]),  # chirp trains with pauses, varied
          "autumn": ("rust", "dawn", [("wind", (1.5, 3.5), 0.7)])}
 SCRIPT_ON_S, SCRIPT_BREAK_S = 20.0, 5.0   # scripted mode: every stage 20 s full, then 5 s dark, then the next
+SCRIPT_ON = {"spring_end": 30.0}          # … "Here Comes the Sun" (spring · End) gets 30 s
 SENSED_GAP_S = 10.0    # a sensed pass at most every 10 s: a flapping radar (unit offline) must not skip phases                     # Flo's spring sounds (Sounds/s2), crickets = cicadas
 # Where S2 sits in the mission (booklet p. 36, data: 00_Bots/Documentation/Tools/build_mission_timeline.py):
 # the 2nd vulnerability window (days 345–534, way home), habitat winter 425–470 → spring 470–510 → summer 510–548.
@@ -109,7 +110,7 @@ class Scenario(Base):
                 "ground": "#%02x%02x%02x" % tuple(int(min(255, v)) for v in g),
                 "spot": round(0.08 + 0.6 * getattr(self, "linger", 0.0), 2),
                 "layers": self._layers(), "season": season, "hint": self.stage_hints[stage], "staged": bool(getattr(self, "staged", None)), "mode": getattr(self, "mode", "interactive"),
-                "script_left": (round(max(0.0, (SCRIPT_ON_S if self.script_on else SCRIPT_BREAK_S) - (time.monotonic() - self.script_t)))
+                "script_left": (round(max(0.0, (SCRIPT_ON.get(STAGES[self.stage][0], SCRIPT_ON_S) if self.script_on else SCRIPT_BREAK_S) - (time.monotonic() - self.script_t)))
                                 if getattr(self, "script_t", None) else None), "armed": bool(getattr(self, "force_empty", False)),
                 "passes": self.passes, "near": round(getattr(self, "near", 0.0), 2),
                 "linger": round(getattr(self, "linger", 0.0), 2), "curve": self._curve,
@@ -163,7 +164,7 @@ class Scenario(Base):
             if self.mode == "scripted":                 # time only: 20 s with the season full, 5 s dark, next stage
                 if self.script_t is None:
                     self.script_t, self.script_on = now, True
-                if self.script_on and now - self.script_t >= SCRIPT_ON_S:
+                if self.script_on and now - self.script_t >= SCRIPT_ON.get(STAGES[self.stage][0], SCRIPT_ON_S):
                     if self.stage == len(STAGES) - 1:
                         break                           # after autumn: the scenario winds down
                     self.script_t, self.script_on = now, False
