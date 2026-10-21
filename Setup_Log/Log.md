@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard heartbeat at half strength
+- Still far too strong on 5 V: resting beat 170 → 85, strongest 255 → 128, spin-up kick and wake-up buzz 255 → 170 (`KICK_PWM`). Flashed.
+- **Undo:** `git revert` this commit and flash.
+
 ## 21.10.2026 — Postcard heartbeat calmer and clearer
 - Felt like a constant vibration: held, the tempo rose to 130 bpm and the two coin motors blurred lub and dub. Now 50 bpm at rest, at most 80 bpm held; lub 70 ms, gap 160 ms, dub 60 ms. Flashed.
 - **Undo:** `git revert` this commit and flash (old: 60/130 bpm, 90/130/70 ms).
