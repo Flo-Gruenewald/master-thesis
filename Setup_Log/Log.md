@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard heartbeat calmer and clearer
+- Felt like a constant vibration: held, the tempo rose to 130 bpm and the two coin motors blurred lub and dub. Now 50 bpm at rest, at most 80 bpm held; lub 70 ms, gap 160 ms, dub 60 ms. Flashed.
+- **Undo:** `git revert` this commit and flash (old: 60/130 bpm, 90/130/70 ms).
+
 ## 21.10.2026 — Postcard: no false presses from its own motors
 - On the 5 V supply the card "pressed itself": the motors disturbed the strip, held → stronger motors → more noise (a constant odd pattern instead of the heartbeat). Now the strip is only read after 60 ms with the motors off; thresholds +100 / +50. Flashed. Serial: 16 s rest without any false press, press at 17.4 s, release at 20.1 s; Wi-Fi from storage: "Connecting to SAVED AP: FLO-WORK … SUCCESS", 192.168.137.43.
 - **Undo:** `git revert 87da241` and flash.
