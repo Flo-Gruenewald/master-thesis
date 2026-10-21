@@ -34,12 +34,12 @@ static const float HOLD_S = 4.0;        // seconds of holding to reach full stre
 static const float RELEASE_S = 1.5;     // seconds for the strength to fall back after letting go
 static const float CHARGE_UP = 0.12;    // tempo charge per second while held (≈ 8 s to the top)
 static const float CHARGE_DOWN = 0.04;  // drain per second when not held (≈ 25 s back to rest)
-static const float BPM_REST = 50, BPM_MAX = 80;   // 21.10: calmer; 130 bpm blurred into a buzz
+static const float BPM_REST = 30, BPM_MAX = 60;   // 21.10: calmer; 130 bpm blurred into a buzz
 static const int PWM_REST = 42;         // 21.10: a quarter of before (on 5 V the motors are much stronger)
 static const int PWM_MAX = 64;
 static const int KICK_PWM = 100;        // the short spin-up at the start of each beat (was 255)
 static const int KICK_MS = 25;          // each lub/dub starts at full duty for this long, so the motor surely spins up
-static const int LUB_MS = 70, GAP_MS = 160, DUB_MS = 60;   // shorter beats, longer gap: a clear "ba-bum"
+static const int LUB_MS = 70, GAP_MS = 250, DUB_MS = 60;   // shorter beats, longer gap: a clear "ba-bum"
 
 float base = 0, intensity = 0, charge = 0;
 bool held = false;

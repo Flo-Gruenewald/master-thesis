@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard: longer breaks (30–60 bpm)
+- Flo: still a constant vibration (stronger when pressed). Tempo 30 bpm at rest / 60 held, gap 250 ms. The firmware drives the pin to 0 between beats; if it still vibrates constantly, the cause is the wiring workaround (motor − on the transistor's base keeps current flowing base → emitter), not the code. Flashed.
+- **Undo:** `git revert` this commit and flash.
+
 ## 21.10.2026 — Postcard heartbeat at half strength
 - Still far too strong on 5 V: resting beat 170 → 85, strongest 255 → 128, spin-up kick and wake-up buzz 255 → 170 (`KICK_PWM`). Flashed. Still too strong → halved again: 42 / 64 / kick 100, flashed.
 - **Undo:** `git revert` this commit and flash.
