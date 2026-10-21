@@ -28,7 +28,7 @@ static const char *T_ARRIVED = "easteregged/postcard/arrived";  // → two short
 #define PIN_MOTOR_GPIO 6        // 21.10.2026: GPIO5 of the C3 died (motor wired straight to the pin) → GPIO6
 #endif
 static const int PIN_FSR = PIN_FSR_GPIO, PIN_MOTOR = PIN_MOTOR_GPIO;   // both motors through one transistor
-static const float HOLD_ON_D = 80, HOLD_OFF_D = 40;   // 21.10: held = this far above the resting mean (raw units);
+static const float HOLD_ON_D = 100, HOLD_OFF_D = 50;   // 21.10: held = this far above the resting mean (raw units);
 static const int HOLD_N = 3;                          //   the strip with 10 kΩ only rises ~+50…+150 when pressed
 static const float HOLD_S = 4.0;        // seconds of holding to reach full strength
 static const float RELEASE_S = 1.5;     // seconds for the strength to fall back after letting go
@@ -42,6 +42,7 @@ static const int LUB_MS = 90, GAP_MS = 130, DUB_MS = 70;
 
 float base = 0, intensity = 0, charge = 0;
 bool held = false;
+bool motorOn = false;                   // set where the motor is driven; the strip is only read while it is off
 uint32_t lastBeat = 0, lastLog = 0, lastTick = 0;
 int rMin = 4095, rMax = 0, rN = 0;      // readings of the current 100 ms log window
 long rSum = 0;
@@ -129,7 +130,10 @@ void loop() {
   int raw = reading();
   rMin = min(rMin, raw); rMax = max(rMax, raw); rSum += raw; rN++;
   static float f = -1;                                             // smoothed reading (~0.2 s): the strip is noisy
-  f = (f < 0) ? raw : f + (raw - f) * 0.1f;
+  static uint32_t motorOffSince = 0;                               // the motors disturb the strip (shared supply):
+  if (motorOn) motorOffSince = now;                                //   read it only after 60 ms with the motors off
+  if (f < 0) f = raw;
+  else if (!motorOn && now - motorOffSince > 60) f += (raw - f) * 0.1f;
   if (!held && f - base > HOLD_ON_D) held = true;                  // pressed: clearly above the resting mean
   else if (held && f - base < HOLD_OFF_D) held = false;            // let go: back near rest
   if (f < base) base += (f - base) * 0.05f;                        // the rest: follows quickly down (a press at start-up
@@ -154,6 +158,7 @@ void loop() {
   uint32_t w = now - wakeAt;            // a postcard arrived: two short buzzes over the heartbeat
   if (wakeAt && w < 700) out = (w < 150 || (w >= 350 && w < 500)) ? 255 : 0;
   analogWrite(PIN_MOTOR, out);
+  motorOn = out > 0;
   network(now);
 
   if (now - lastLog >= 100) {
