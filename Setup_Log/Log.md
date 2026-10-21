@@ -2,6 +2,10 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — Postcard: no false presses from its own motors
+- On the 5 V supply the card "pressed itself": the motors disturbed the strip, held → stronger motors → more noise (a constant odd pattern instead of the heartbeat). Now the strip is only read after 60 ms with the motors off; thresholds +100 / +50. Flashed. Serial: 16 s rest without any false press, press at 17.4 s, release at 20.1 s; Wi-Fi from storage: "Connecting to SAVED AP: FLO-WORK … SUCCESS", 192.168.137.43.
+- **Undo:** `git revert 87da241` and flash.
+
 ## 21.10.2026 — Postcard keeps its Wi-Fi, named "postcard"
 - 21.10 later: confirmed online — 192.168.137.43 answers ping, and with the host running presses arrive as `in/postcard/touch {"held":1,"i":1.00}`.
 - The card joined FLO-WORK via the portal (seen as 192.168.137.43) but forgot it after a restart ("No wifi saved"). Now the portal's choice is also kept in the chip's own storage (`Preferences`, namespace "postcard"; nothing in code or git) and tried first at every start (8 s), then the portal only if that fails. Hostname "postcard" (Windows hotspot list). Flashed; Flo enters FLO-WORK once more in "postcard-setup".
