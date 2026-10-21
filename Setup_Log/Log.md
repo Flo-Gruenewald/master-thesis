@@ -3,7 +3,7 @@
 Every change with undo steps. Newest first.
 
 ## 21.10.2026 — Postcard heartbeat at half strength
-- Still far too strong on 5 V: resting beat 170 → 85, strongest 255 → 128, spin-up kick and wake-up buzz 255 → 170 (`KICK_PWM`). Flashed.
+- Still far too strong on 5 V: resting beat 170 → 85, strongest 255 → 128, spin-up kick and wake-up buzz 255 → 170 (`KICK_PWM`). Flashed. Still too strong → halved again: 42 / 64 / kick 100, flashed.
 - **Undo:** `git revert` this commit and flash.
 
 ## 21.10.2026 — Postcard heartbeat calmer and clearer
