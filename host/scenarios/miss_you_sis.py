@@ -84,10 +84,12 @@ class Scenario(Base):
             now = time.monotonic()
             dt, last = now - last, now
             if press_t is None:
-                if self._hold(dt) > 0.05:                 # the card is pressed: photo + Rome
+                auto = now - t0 >= float(c.get("auto_press_s", 20))   # Wizard of Oz: 20 s after arrival anyway
+                if self._hold(dt) > 0.05 or auto:          # the card is pressed: photo + Rome
                     press_t, self.photo = now, True
                     self.moment("rome")
-                    self.host.event({"type": "note", "text": "the photo of Lena and Alice opens; Rome fades in"})
+                    self.host.event({"type": "note", "text": ("20 s passed" if auto and self._hold(dt) <= 0.05 else "the card is pressed")
+                                     + ": the photo of Lena and Alice opens; Rome fades in"})
                 elif now - t0 > 240:                      # never picked up
                     break
                 elif now >= next_pulse:                   # not picked up yet: the table pulses

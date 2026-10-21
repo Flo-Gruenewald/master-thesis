@@ -2,6 +2,11 @@
 
 Every change with undo steps. Newest first.
 
+## 21.10.2026 — S3 Wizard of Oz: the card triggers itself after 20 s
+- The rebuilt postcard's touches did not reach the host reliably (card online, no touch messages on 5 V). S3 now opens the photo + Rome automatically 20 s after the postcard arrived (`auto_press_s`, default 20, `[miss_you_sis]`); a real press or "Hold the card" before that still triggers at once. Live: arrived 0 s → rome + photo at 20.1 s. Tests 16 passed.
+- Postcard firmware state today: motors GPIO6, 10 bpm rest / 30 held, strength 42–64 (kick 100); the constant vibration comes from the wiring workaround (motor − on the transistor's base).
+- **Undo:** `git revert` this commit.
+
 ## 21.10.2026 — Postcard: longer breaks (30–60 bpm)
 - Flo: still a constant vibration (stronger when pressed). Tempo 30 bpm at rest / 60 held, gap 250 ms. The firmware drives the pin to 0 between beats; if it still vibrates constantly, the cause is the wiring workaround (motor − on the transistor's base keeps current flowing base → emitter), not the code. Flashed.
 - **Undo:** `git revert` this commit and flash.
